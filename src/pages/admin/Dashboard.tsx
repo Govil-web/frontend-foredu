@@ -496,27 +496,30 @@ const AdminDashboard: React.FC = () => {
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText 
-                        primary={user.name} 
-                        secondary={
-                          <Chip
-                            label={
-                              user.role === UserRole.ESTUDIANTE ? 'Estudiante' : 
-                              user.role === UserRole.PROFESOR ? 'Profesor' :
-                              user.role === UserRole.TUTOR ? 'Tutor' : 'Administrador'
-                            }
-                            size="small"
-                            sx={{ 
-                              fontSize: '0.7rem',
-                              height: '20px',
-                              mt: 0.5,
-                              bgcolor: getRoleBgColor(user.role),
-                              color: getRoleTextColor(user.role),
-                              border: 'none'
-                            }}
-                          />
-                        }
-                        primaryTypographyProps={{ fontWeight: 'medium' }}
-                      />
+  primary={user.name} 
+  // El problema está aquí - el Chip se renderiza como un div dentro de un p
+  secondary={
+    // Envuelve el Chip en un span en lugar de dejarlo directamente bajo el p
+    <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
+      <Chip
+        label={
+          user.role === UserRole.ESTUDIANTE ? 'Estudiante' : 
+          user.role === UserRole.PROFESOR ? 'Profesor' :
+          user.role === UserRole.TUTOR ? 'Tutor' : 'Administrador'
+        }
+        size="small"
+        sx={{ 
+          fontSize: '0.7rem',
+          height: '20px',
+          bgcolor: getRoleBgColor(user.role),
+          color: getRoleTextColor(user.role),
+          border: 'none'
+        }}
+      />
+    </Box>
+  }
+  primaryTypographyProps={{ fontWeight: 'medium' }}
+/>
                     </ListItem>
                   </React.Fragment>
                 ))}

@@ -1,133 +1,147 @@
 // src/components/design-system/Logo/Logo.tsx
 import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
 interface LogoProps {
   variant?: 'horizontal' | 'vertical' | 'isotype';
   size?: 'small' | 'medium' | 'large';
+  color?: 'color' | 'white' | 'dark';
 }
 
-const Logo: React.FC<LogoProps> = ({ 
-  variant = 'horizontal', 
-  size = 'medium' 
+// Componente para los puntos sobre la "U"
+const LogoDots = styled('span')(({ theme }) => ({
+  position: 'relative',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    width: '4px',
+    height: '4px',
+    borderRadius: '50%',
+    backgroundColor: theme.palette.primary.main,
+    top: '-8px',
+    right: '3px',
+  },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    width: '4px',
+    height: '4px',
+    borderRadius: '50%',
+    backgroundColor: theme.palette.primary.main,
+    top: '-8px',
+    right: '13px',
+  },
+}));
+
+const Logo: React.FC<LogoProps> = ({
+  variant = 'horizontal',
+  size = 'medium',
+  color = 'color'
 }) => {
   const theme = useTheme();
   
+  // Colores según la variante
+  const primaryColor = color === 'color' ? theme.palette.primary.main : 
+                      color === 'white' ? '#FFFFFF' : theme.palette.secondary.main;
+  const secondaryColor = color === 'color' ? theme.palette.secondary.main : 
+                        color === 'white' ? '#FFFFFF' : theme.palette.secondary.main;
+  const textColor = color === 'white' ? '#FFFFFF' : theme.palette.secondary.main;
+  
   // Definir dimensiones según el tamaño
-  let width, height, fontSize;
+  let logoHeight, fontSize, bookWidth;
   switch (size) {
     case 'small':
-      width = variant === 'horizontal' ? 120 : 40;
-      height = variant === 'horizontal' ? 32 : 40;
+      logoHeight = 32;
       fontSize = '1rem';
+      bookWidth = 30;
       break;
     case 'large':
-      width = variant === 'horizontal' ? 200 : 60;
-      height = variant === 'horizontal' ? 52 : 60;
+      logoHeight = 64;
       fontSize = '1.5rem';
+      bookWidth = 60;
       break;
     default: // medium
-      width = variant === 'horizontal' ? 160 : 50;
-      height = variant === 'horizontal' ? 42 : 50;
+      logoHeight = 48;
       fontSize = '1.25rem';
+      bookWidth = 45;
   }
-
-  // Simulación del logotipo con colores de Foredú
+  
+  // SVG del logotipo optimizado para renderizado correcto
+  const LogoSvg = () => (
+    <Box 
+      component="svg" 
+      viewBox="0 0 32 32" 
+      width={bookWidth} 
+      height={logoHeight}
+      sx={{ display: 'block' }}
+      aria-label="Foredu logo"
+    >
+      {/* Azul oscuro - F */}
+      <path 
+        d="M2 6 C2 5 3 4 4 4 L12 2 C13 2 14 3 14 4 V26 C14 27 13 28 12 28 L4 30 C3 30 2 29 2 28 Z" 
+        fill={secondaryColor} 
+      />
+      {/* Naranja - E */}
+      <path 
+        d="M18 4 C18 3 19 2 20 2 L28 4 C29 4 30 5 30 6 V28 C30 29 29 30 28 30 L20 28 C19 28 18 27 18 26 Z" 
+        fill={primaryColor} 
+      />
+    </Box>
+  );
+  
+  // Isotype - Solo el símbolo del libro
+  if (variant === 'isotype') {
+    return <LogoSvg />;
+  }
+  
+  // Horizontal - Logo con texto a la derecha
   if (variant === 'horizontal') {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box 
-          sx={{ 
-            width: height * 0.8, 
-            height: height, 
-            backgroundColor: theme.palette.secondary.main,
-            borderRadius: '4px 0 0 4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        />
-        <Box 
-          sx={{ 
-            width: height * 0.8, 
-            height: height, 
-            backgroundColor: theme.palette.primary.main,
-            borderRadius: '0 4px 4px 0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        />
-        <Typography 
-          variant="h6" 
-          sx={{ 
+        <LogoSvg />
+        <Typography
+          className="logo-text"
+          variant="h6"
+          sx={{
             ml: 1.5,
+            fontFamily: '"Candal", sans-serif',
             fontWeight: 'bold',
-            color: theme.palette.secondary.main,
-            fontSize
+            color: textColor,
+            fontSize,
+            letterSpacing: '0.02em',
+            position: 'relative'
           }}
         >
-          Foredü
+          Foredu
+          <LogoDots />
         </Typography>
       </Box>
     );
   }
-
-  if (variant === 'vertical') {
-    return (
-      <Box sx={{ textAlign: 'center' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Box 
-            sx={{ 
-              width: width / 2, 
-              height: height, 
-              backgroundColor: theme.palette.secondary.main,
-              borderRadius: '4px 0 0 4px'
-            }}
-          />
-          <Box 
-            sx={{ 
-              width: width / 2, 
-              height: height, 
-              backgroundColor: theme.palette.primary.main,
-              borderRadius: '0 4px 4px 0'
-            }}
-          />
-        </Box>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            mt: 1, 
-            fontWeight: 'bold',
-            color: theme.palette.secondary.main,
-            fontSize
-          }}
-        >
-          Foredü
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Isotype (solo símbolo)
+  
+  // Vertical - Logo con texto debajo
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Box 
-        sx={{ 
-          width: width / 2, 
-          height: height, 
-          backgroundColor: theme.palette.secondary.main,
-          borderRadius: '4px 0 0 4px'
+    <Box sx={{ textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <LogoSvg />
+      </Box>
+      <Typography
+        className="logo-text"
+        variant="h6"
+        sx={{
+          mt: 1.5,
+          fontFamily: '"Candal", sans-serif',
+          fontWeight: 'bold',
+          color: textColor,
+          fontSize,
+          letterSpacing: '0.02em',
+          position: 'relative'
         }}
-      />
-      <Box 
-        sx={{ 
-          width: width / 2, 
-          height: height, 
-          backgroundColor: theme.palette.primary.main,
-          borderRadius: '0 4px 4px 0'
-        }}
-      />
+      >
+        Foredu
+        <LogoDots />
+      </Typography>
     </Box>
   );
 };

@@ -30,6 +30,7 @@ import {
 import { useAuth } from '../../../hooks/useAuth';
 import { UserRole } from '../../../types/auth';
 import { useNavigate } from 'react-router-dom';
+import Logo from '../../design-system/Logo/Logo'
 
 // Componente para las formas decorativas
 const HeaderDecoration = styled(Box)(({ theme }) => ({
@@ -292,7 +293,13 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <StyledAppBar position="sticky">
+      <AppBar 
+        position="sticky"
+        sx={{ 
+          backgroundColor: theme.palette.secondary.main,
+          boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.1)',
+        }}
+      >
         <Toolbar sx={{ position: 'relative', overflow: 'hidden' }}>
           {showMenuButton && (
             <IconButton
@@ -306,6 +313,17 @@ const Header: React.FC<HeaderProps> = ({
               <MenuIcon />
             </IconButton>
           )}
+
+           {/* Logo en modo blanco para contraste con fondo oscuro */}
+           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', zIndex: 1 }}>
+            <Logo variant="horizontal" size="small" color="white" />
+          </Box>
+
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, zIndex: 1 }}>
+            <Logo variant="isotype" size="small" color="white" />
+          </Box>
+          
+          <Box sx={{ flexGrow: 1 }} />
           
           <Typography
             variant="h6"
@@ -399,7 +417,7 @@ const Header: React.FC<HeaderProps> = ({
           {/* Elemento decorativo */}
           <HeaderDecoration />
         </Toolbar>
-      </StyledAppBar>
+      </AppBar>
       {renderMobileMenu}
       {renderMenu}
     </Box>

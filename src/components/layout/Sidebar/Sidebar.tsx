@@ -84,9 +84,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   
   const drawerContent = (
     <>
-      <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
-        <Logo variant="horizontal" />
-      </Box>
+    <Box sx={{ 
+  p: 2, 
+  display: 'flex', 
+  justifyContent: 'center',
+  backgroundColor: theme.palette.sidebar.light
+}}>
+  {/* Usa explícitamente el color 'color' para asegurar la visualización correcta */}
+  <Logo variant="horizontal" size="medium" color="color" />
+</Box>
       
       <List sx={{ px: 2 }}>
         {navigation.map((item) => (

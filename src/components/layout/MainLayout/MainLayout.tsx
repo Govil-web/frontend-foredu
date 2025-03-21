@@ -40,6 +40,7 @@ import {
 import { styled } from '@mui/material/styles';
 import { UserRole } from '../../../types/auth';
 import { useAuth } from '../../../hooks/useAuth';
+import  Logo  from '../../design-system/Logo/Logo';
 
 const drawerWidth = 260;
 
@@ -405,24 +406,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       >
         <DrawerHeader>
           <LogoContainer>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontWeight: 'bold',
-                color: theme.palette.secondary.main,
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <img 
-                src="/assets/logo-foredu.svg" 
-                alt="Foredu" 
-                width="30" 
-                height="30" 
-                style={{ marginRight: theme.spacing(1) }} 
-              />
-              Foredu
-            </Typography>
+          <Logo variant="horizontal" size="medium" />
+
           </LogoContainer>
           <IconButton onClick={handleDrawerClose}>
             <ChevronLeftIcon />

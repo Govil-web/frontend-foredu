@@ -94,30 +94,30 @@ const TeacherDashboard: React.FC = () => {
                   <React.Fragment key={task.id}>
                     {index > 0 && <Divider component="li" />}
                     <ListItem>
-                      <ListItemText
-                        primary={task.task}
-                        secondary={
-                          <Box>
-                            <Typography variant="caption" display="block" gutterBottom>
-                              Fecha límite: {task.deadline}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Box sx={{ width: '100%', mr: 1 }}>
-                                <LinearProgress 
-                                  variant="determinate" 
-                                  value={task.progress} 
-                                  color={task.progress < 30 ? "error" : task.progress < 70 ? "warning" : "success"} 
-                                />
-                              </Box>
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  {task.progress}%
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </Box>
-                        }
-                      />
+                    <ListItemText
+  primary={task.task}
+  secondary={
+    <Box component="span"> {/* Cambia aquí: añade component="span" */}
+      <Typography variant="caption" component="span" display="block" gutterBottom>
+        Fecha límite: {task.deadline}
+      </Typography>
+      <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}> {/* Aquí también */}
+        <Box component="span" sx={{ width: '100%', mr: 1 }}> {/* Y aquí */}
+          <LinearProgress 
+            variant="determinate" 
+            value={task.progress} 
+            color={task.progress < 30 ? "error" : task.progress < 70 ? "warning" : "success"} 
+          />
+        </Box>
+        <Box component="span"> {/* Y aquí */}
+          <Typography variant="body2" color="text.secondary" component="span">
+            {task.progress}%
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  }
+/>
                     </ListItem>
                   </React.Fragment>
                 ))}

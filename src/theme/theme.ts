@@ -95,11 +95,15 @@ const foreduTheme = createTheme({
     h6: {
       fontWeight: 600,
       color: '#262853',
-      fontSize: '1rem',
+      fontSize: '1.25rem',
+      '&.logo-text': {
+        fontFamily: '"Candal", sans-serif',
+      }
     },
     subtitle1: {
       fontWeight: 500,
       fontSize: '1rem',
+
     },
     subtitle2: {
       fontWeight: 500,
