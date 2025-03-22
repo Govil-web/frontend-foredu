@@ -206,7 +206,7 @@ const Landing: React.FC = () => {
             <Grid item xs={12} md={6} sx={{ textAlign: 'center' }}>
               <Box 
                 component="img"
-                src="/assets/education-hero.svg" 
+                src="src\assets\education-hero.jpg" 
                 alt="Plataforma educativa"
                 sx={{ 
                   maxWidth: '100%', 
