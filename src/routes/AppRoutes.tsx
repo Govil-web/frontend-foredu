@@ -2,13 +2,13 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { UserRole } from '../types/auth';
-import { useAuth } from '../hooks/useAuth';
 import ProtectedRoute from './ProtectedRoute';
 
 // Layouts
 import MainLayout from '../components/layout/MainLayout/MainLayout';
 
 // Páginas públicas
+import Landing from '../pages/Landing/Landing';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
@@ -34,33 +34,16 @@ import StudentProgress from '../pages/tutor/StudentProgress';
 // Páginas compartidas
 //import Calendar from '../pages/shared/Calendar';
 //import Messages from '../pages/shared/Messages';
-//import Profile from '../pages/shared/Profile';
+import Profile from '../pages/shared/Profile';
 
 const AppRoutes: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
 
-  // Redirección inteligente basada en el rol del usuario
-  const getHomePage = () => {
-    if (!isAuthenticated) return '/login';
-    
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/dashboard';
-      case UserRole.PROFESOR:
-        return '/teacher/dashboard';
-      case UserRole.ESTUDIANTE:
-        return '/student/dashboard';
-      case UserRole.TUTOR:
-        return '/tutor/dashboard';
-      default:
-        return '/login';
-    }
-  };
+ 
 
   return (
     <Routes>
       {/* Redirección a la página de inicio según el rol */}
-      <Route path="/" element={<Navigate to={getHomePage()} />} />
+      <Route path="/" element={<Landing />} />
 
       {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
@@ -138,13 +121,13 @@ const AppRoutes: React.FC = () => {
         </ProtectedRoute>
       } />*/}  
       
-      {/*<Route path="/profile" element={
-        <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT, UserRole.TUTOR]}>
+      <Route path="/profile" element={
+        <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.PROFESOR, UserRole.ESTUDIANTE, UserRole.TUTOR]}>
           <MainLayout>
            <Profile />
           </MainLayout>
         </ProtectedRoute>
-      } />*/} 
+      } />
 
       {/* Ruta 404 */}
       <Route path="*" element={<Navigate to="/" />} />
