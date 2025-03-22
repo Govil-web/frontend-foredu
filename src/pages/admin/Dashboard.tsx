@@ -25,7 +25,6 @@ import {
   Add as AddIcon,
   School as SchoolIcon,
   Person as PersonIcon,
-  Book as BookIcon,
   MoreVert as MoreVertIcon,
   TrendingUp as TrendingUpIcon,
   EventNote as EventNoteIcon,
@@ -37,62 +36,6 @@ import {
 import { UserRole } from '../../types/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { styled } from '@mui/material/styles';
-
-// Componente para las formas decorativas
-const DecorativeShape = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  borderRadius: '50%',
-  opacity: 0.8,
-  zIndex: 0,
-}));
-
-// Colores de seguridad para usar como fallback
-const safeColors = {
-  primary: {
-    main: '#E9511D',
-    light: '#FF7A47',
-    dark: '#C43C00',
-  },
-  secondary: {
-    main: '#262853',
-    light: '#3E4178',
-    dark: '#1A1C3F',
-  },
-  info: {
-    main: '#2196F3',
-    light: '#64B5F6',
-    dark: '#1976D2',
-  },
-  success: {
-    main: '#4CAF50',
-    light: '#81C784',
-    dark: '#388E3C',
-  },
-  error: {
-    main: '#F44336',
-    light: '#E57373',
-    dark: '#D32F2F',
-  },
-  warning: {
-    main: '#FF9800',
-    light: '#FFB74D',
-    dark: '#F57C00',
-  },
-};
-
-// Función para acceder de forma segura a colores del tema
-const getThemeColor = (
-  theme: any, 
-  colorType: keyof typeof safeColors, 
-  variant: keyof typeof safeColors['primary'] = 'main'
-) => {
-  try {
-    return theme.palette[colorType]?.[variant] || safeColors[colorType][variant];
-  } catch (e) {
-    // Fallback a colores seguros si hay algún error
-    return safeColors[colorType][variant];
-  }
-};
 
 interface StatsCardProps {
   title: string;
@@ -170,7 +113,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
           <TrendingUpIcon 
             sx={{ 
-              color: trend >= 0 ? getThemeColor(theme, 'success') : getThemeColor(theme, 'error'),
+              color: trend >= 0 ? 'success.main' : 'error.main',
               fontSize: '1rem',
               mr: 0.5
             }} 
@@ -178,7 +121,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
           <Typography 
             variant="caption" 
             sx={{ 
-              color: trend >= 0 ? getThemeColor(theme, 'success') : getThemeColor(theme, 'error'),
+              color: trend >= 0 ? 'success.main' : 'error.main',
               fontWeight: 'medium'
             }}
           >
@@ -209,7 +152,7 @@ const SectionHeading = styled(Typography)(({ theme }) => ({
   display: 'inline-block',
   marginBottom: theme.spacing(3),
   fontWeight: 'bold',
-  color: getThemeColor(theme, 'secondary'),
+  color: theme.palette.secondary.main,
   '&::after': {
     content: '""',
     position: 'absolute',
@@ -217,7 +160,7 @@ const SectionHeading = styled(Typography)(({ theme }) => ({
     left: '0',
     width: '40px',
     height: '4px',
-    backgroundColor: getThemeColor(theme, 'primary'),
+    backgroundColor: theme.palette.primary.main,
     borderRadius: '2px',
   },
 }));
@@ -232,7 +175,7 @@ const AdminDashboard: React.FC = () => {
       title: 'Total Estudiantes', 
       value: 1254, 
       icon: <PersonIcon />, 
-      color: getThemeColor(theme, 'primary'),
+      color: theme.palette.primary.main,
       trend: 4.2,
       subtitle: '28 nuevos este mes'
     },
@@ -240,7 +183,7 @@ const AdminDashboard: React.FC = () => {
       title: 'Total Profesores', 
       value: 48, 
       icon: <PersonIcon />, 
-      color: getThemeColor(theme, 'secondary'),
+      color: theme.palette.secondary.main,
       trend: 1.5,
       subtitle: '3 nuevos este mes'
     },
@@ -248,7 +191,7 @@ const AdminDashboard: React.FC = () => {
       title: 'Cursos Activos', 
       value: 36, 
       icon: <SchoolIcon />, 
-      color: getThemeColor(theme, 'success'),
+      color: theme.palette.success.main,
       trend: 2.8,
       subtitle: '5 cursos nuevos'
     },
@@ -284,25 +227,25 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Función para obtener color de fondo seguro según rol
+  // Función para obtener color de fondo según rol usando el tema
   const getRoleBgColor = (role: UserRole) => {
     if (role === UserRole.ESTUDIANTE) {
-      return alpha(getThemeColor(theme, 'info'), 0.2);
+      return alpha(theme.palette.info.main, 0.2);
     } else if (role === UserRole.PROFESOR) {
-      return alpha(getThemeColor(theme, 'primary'), 0.2);
+      return alpha(theme.palette.primary.main, 0.2);
     } else {
-      return alpha(getThemeColor(theme, 'success'), 0.2);
+      return alpha(theme.palette.success.main, 0.2);
     }
   };
 
-  // Función para obtener color de texto seguro según rol
+  // Función para obtener color de texto según rol usando el tema
   const getRoleTextColor = (role: UserRole) => {
     if (role === UserRole.ESTUDIANTE) {
-      return getThemeColor(theme, 'info');
+      return theme.palette.info.main;
     } else if (role === UserRole.PROFESOR) {
-      return getThemeColor(theme, 'primary');
+      return theme.palette.primary.main;
     } else {
-      return getThemeColor(theme, 'success');
+      return theme.palette.success.main;
     }
   };
 
@@ -323,11 +266,11 @@ const AdminDashboard: React.FC = () => {
           startIcon={<AddIcon />}
           color="primary"
           sx={{ 
-            boxShadow: '0 4px 10px rgba(233, 81, 29, 0.2)',
+            boxShadow: theme => `0 4px 10px ${alpha(theme.palette.primary.main, 0.2)}`,
             transition: 'all 0.3s ease',
             '&:hover': {
               transform: 'translateY(-2px)',
-              boxShadow: '0 6px 15px rgba(233, 81, 29, 0.3)',
+              boxShadow: theme => `0 6px 15px ${alpha(theme.palette.primary.main, 0.3)}`,
             }
           }}
         >
@@ -341,9 +284,9 @@ const AdminDashboard: React.FC = () => {
           mb: 4, 
           position: 'relative',
           overflow: 'hidden',
-          background: `linear-gradient(135deg, ${getThemeColor(theme, 'secondary')} 0%, ${getThemeColor(theme, 'secondary', 'dark')} 100%)`,
+          background: theme => `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
           color: 'white',
-          boxShadow: '0 8px 20px rgba(38, 40, 83, 0.2)'
+          boxShadow: theme => `0 8px 20px ${alpha(theme.palette.secondary.main, 0.2)}`
         }}
       >
         <CardContent sx={{ position: 'relative', zIndex: 1, py: 3 }}>
@@ -362,7 +305,7 @@ const AdminDashboard: React.FC = () => {
                 endIcon={<ArrowForwardIcon />}
                 sx={{ 
                   mt: 1,
-                  boxShadow: '0 4px 10px rgba(233, 81, 29, 0.3)'
+                  boxShadow: theme => `0 4px 10px ${alpha(theme.palette.primary.main, 0.3)}`
                 }}
               >
                 Ver resumen
@@ -429,7 +372,7 @@ const AdminDashboard: React.FC = () => {
             <CardHeader 
               title="Usuarios Recientes" 
               titleTypographyProps={{ 
-                variant: 'h6', 
+                variant: 'h6',
                 color: 'secondary.main',
                 fontWeight: 'bold'
               }}
@@ -462,7 +405,7 @@ const AdminDashboard: React.FC = () => {
                         px: 3,
                         transition: 'all 0.2s ease',
                         '&:hover': {
-                          backgroundColor: theme.palette.sidebar?.light || "#F0F4FA",
+                          backgroundColor: theme.palette.action.hover,
                         }
                       }}
                       secondaryAction={
@@ -474,7 +417,7 @@ const AdminDashboard: React.FC = () => {
                             borderRadius: '20px',
                             transition: 'all 0.2s ease',
                             '&:hover': {
-                              backgroundColor: getThemeColor(theme, 'primary'),
+                              backgroundColor: 'primary.main',
                               color: 'white'
                             }
                           }}
@@ -496,30 +439,33 @@ const AdminDashboard: React.FC = () => {
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText 
-  primary={user.name} 
-  // El problema está aquí - el Chip se renderiza como un div dentro de un p
-  secondary={
-    // Envuelve el Chip en un span en lugar de dejarlo directamente bajo el p
-    <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
-      <Chip
-        label={
-          user.role === UserRole.ESTUDIANTE ? 'Estudiante' : 
-          user.role === UserRole.PROFESOR ? 'Profesor' :
-          user.role === UserRole.TUTOR ? 'Tutor' : 'Administrador'
-        }
-        size="small"
-        sx={{ 
-          fontSize: '0.7rem',
-          height: '20px',
-          bgcolor: getRoleBgColor(user.role),
-          color: getRoleTextColor(user.role),
-          border: 'none'
-        }}
-      />
-    </Box>
-  }
-  primaryTypographyProps={{ fontWeight: 'medium' }}
-/>
+                        primary={user.name} 
+                        // FIX: Usando Typography que no sea un <p> para evitar error de anidación
+                        secondary={
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            color="text.secondary"
+                          >
+                            <Chip
+                              label={
+                                user.role === UserRole.ESTUDIANTE ? 'Estudiante' : 
+                                user.role === UserRole.PROFESOR ? 'Profesor' :
+                                user.role === UserRole.TUTOR ? 'Tutor' : 'Administrador'
+                              }
+                              size="small"
+                              sx={{ 
+                                fontSize: '0.7rem',
+                                height: '20px',
+                                bgcolor: getRoleBgColor(user.role),
+                                color: getRoleTextColor(user.role),
+                                border: 'none'
+                              }}
+                            />
+                          </Typography>
+                        }
+                        primaryTypographyProps={{ fontWeight: 'medium' }}
+                      />
                     </ListItem>
                   </React.Fragment>
                 ))}
@@ -535,7 +481,7 @@ const AdminDashboard: React.FC = () => {
                 width: '150px',
                 height: '150px',
                 borderBottomLeftRadius: '100%',
-                background: alpha(getThemeColor(theme, 'primary'), 0.08),
+                background: theme => alpha(theme.palette.primary.main, 0.08),
                 zIndex: 0,
               }}
             />
@@ -579,7 +525,7 @@ const AdminDashboard: React.FC = () => {
                             px: 2, 
                             transition: 'all 0.2s ease',
                             '&:hover': {
-                              backgroundColor: theme.palette.sidebar?.light || "#F0F4FA",
+                              backgroundColor: theme.palette.action.hover,
                             }
                           }}
                         >
@@ -590,15 +536,12 @@ const AdminDashboard: React.FC = () => {
                               </Typography>
                             }
                             secondary={
-                              <>
-                                <Typography
-                                  component="span"
-                                  variant="body2"
-                                  color="text.primary"
-                                  sx={{ display: 'block', mt: 0.5 }}
-                                >
-                                  {notif.message}
-                                </Typography>
+                              <Typography
+                                component="span"
+                                variant="body2"
+                                color="text.primary"
+                              >
+                                {notif.message}
                                 <Typography
                                   component="span"
                                   variant="caption"
@@ -606,6 +549,7 @@ const AdminDashboard: React.FC = () => {
                                   sx={{ 
                                     display: 'inline-block',
                                     mt: 1,
+                                    ml: 0.5,
                                     bgcolor: 'rgba(0, 0, 0, 0.05)',
                                     px: 1,
                                     py: 0.25,
@@ -614,7 +558,7 @@ const AdminDashboard: React.FC = () => {
                                 >
                                   Hace {notif.time}
                                 </Typography>
-                              </>
+                              </Typography>
                             }
                           />
                         </ListItem>
@@ -632,7 +576,7 @@ const AdminDashboard: React.FC = () => {
                     width: '100px',
                     height: '100px',
                     borderTopRightRadius: '100%',
-                    background: alpha(getThemeColor(theme, 'primary'), 0.08),
+                    background: theme => alpha(theme.palette.primary.main, 0.08),
                     zIndex: 0,
                   }}
                 />
@@ -673,7 +617,7 @@ const AdminDashboard: React.FC = () => {
                             px: 2,
                             transition: 'all 0.2s ease',
                             '&:hover': {
-                              backgroundColor: theme.palette.sidebar?.light || "#F0F4FA",
+                              backgroundColor: theme.palette.action.hover,
                             }
                           }}
                         >
@@ -681,11 +625,11 @@ const AdminDashboard: React.FC = () => {
                             <Avatar
                               sx={{
                                 bgcolor: event.type === 'deadline' 
-                                  ? alpha(getThemeColor(theme, 'error'), 0.2)
-                                  : alpha(getThemeColor(theme, 'primary'), 0.2),
+                                  ? alpha(theme.palette.error.main, 0.2)
+                                  : alpha(theme.palette.primary.main, 0.2),
                                 color: event.type === 'deadline'
-                                  ? getThemeColor(theme, 'error')
-                                  : getThemeColor(theme, 'primary'),
+                                  ? theme.palette.error.main
+                                  : theme.palette.primary.main,
                                 boxShadow: 'none'
                               }}
                             >
@@ -699,21 +643,21 @@ const AdminDashboard: React.FC = () => {
                               </Typography>
                             } 
                             secondary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                              <Typography component="span" variant="body2">
                                 <Chip 
                                   label={event.date} 
                                   size="small"
                                   sx={{ 
                                     mr: 1, 
-                                    bgcolor: theme.palette.sidebar?.main || "#E7EAF5",
+                                    bgcolor: theme.palette.action.hover,
                                     fontSize: '0.7rem',
                                     height: '20px'
                                   }}
                                 />
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography component="span" variant="caption" color="text.secondary">
                                   {event.time}
                                 </Typography>
-                              </Box>
+                              </Typography>
                             }
                           />
                         </ListItem>
@@ -731,7 +675,7 @@ const AdminDashboard: React.FC = () => {
                     width: '120px',
                     height: '120px',
                     borderBottomLeftRadius: '100%',
-                    background: alpha(getThemeColor(theme, 'secondary'), 0.08),
+                    background: theme => alpha(theme.palette.secondary.main, 0.08),
                     zIndex: 0,
                   }}
                 />
