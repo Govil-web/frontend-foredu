@@ -1,151 +1,25 @@
 // src/pages/admin/Dashboard.tsx
 import React from 'react';
 import { 
-  Grid, 
-  Paper, 
-  Typography, 
   Box, 
+  Typography, 
+  Grid, 
   Button, 
-  Avatar, 
-  List, 
-  ListItem, 
-  ListItemAvatar, 
-  ListItemText, 
-  Divider,
-  Card,
-  CardContent,
-  CardHeader,
-  IconButton,
-  useTheme,
-  Chip,
-  Badge,
   alpha,
 } from '@mui/material';
 import { 
   Add as AddIcon,
   School as SchoolIcon,
   Person as PersonIcon,
-  MoreVert as MoreVertIcon,
-  TrendingUp as TrendingUpIcon,
-  EventNote as EventNoteIcon,
-  Notifications as NotificationsIcon,
-  ArrowForward as ArrowForwardIcon,
-  CalendarMonth as CalendarIcon,
-  TextSnippet as TextSnippetIcon,
 } from '@mui/icons-material';
-import { UserRole } from '../../types/auth';
+import { useTheme } from '@mui/material/styles';
+import StyledCard from '../../components/ui/StyledCard';
+import StatCard from '../../components/ui/StatCard';
 import { useAuth } from '../../hooks/useAuth';
 import { styled } from '@mui/material/styles';
 
-interface StatsCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color?: string;
-  trend?: number;
-  subtitle?: string;
-}
-
-const StatsCard: React.FC<StatsCardProps> = ({ 
-  title, 
-  value, 
-  icon, 
-  color = 'primary.main', 
-  trend, 
-  subtitle 
-}) => {
-  const theme = useTheme();
-  
-  return (
-    <Paper 
-      elevation={1} 
-      sx={{ 
-        p: 3, 
-        borderRadius: 3,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-5px)',
-          boxShadow: '0 12px 20px rgba(0, 0, 0, 0.1)',
-        },
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '6px',
-          height: '100%',
-          backgroundColor: color,
-        }
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
-        <Avatar sx={{ 
-          bgcolor: theme.palette.background.default, 
-          color: color, 
-          mr: 2,
-          width: 48,
-          height: 48,
-          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)'
-        }}>
-          {icon}
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="text.secondary">
-            {title}
-          </Typography>
-          <Typography variant="h4" fontWeight="bold">
-            {value}
-          </Typography>
-          {subtitle && (
-            <Typography variant="caption" color="text.secondary">
-              {subtitle}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-      
-      {trend !== undefined && (
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-          <TrendingUpIcon 
-            sx={{ 
-              color: trend >= 0 ? 'success.main' : 'error.main',
-              fontSize: '1rem',
-              mr: 0.5
-            }} 
-          />
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: trend >= 0 ? 'success.main' : 'error.main',
-              fontWeight: 'medium'
-            }}
-          >
-            {trend >= 0 ? '+' : ''}{trend}% desde el mes pasado
-          </Typography>
-        </Box>
-      )}
-
-      {/* Elemento decorativo */}
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: '-20px',
-          right: '-20px',
-          width: '100px',
-          height: '100px',
-          borderRadius: '50%',
-          background: `${color}20`,
-          zIndex: 0,
-        }}
-      />
-    </Paper>
-  );
-};
+// Importar datos mock
+import { mockCoursePerformance } from '../../mock-data/courses';
 
 const SectionHeading = styled(Typography)(({ theme }) => ({
   position: 'relative',
@@ -196,58 +70,6 @@ const AdminDashboard: React.FC = () => {
       subtitle: '5 cursos nuevos'
     },
   ];
-  
-  const recentUsers = [
-    { id: '1', name: 'Juan Pérez', role: UserRole.ESTUDIANTE, avatar: undefined },
-    { id: '2', name: 'María García', role: UserRole.PROFESOR, avatar: undefined },
-    { id: '3', name: 'Carlos López', role: UserRole.TUTOR, avatar: undefined },
-    { id: '4', name: 'Ana Martínez', role: UserRole.ESTUDIANTE, avatar: undefined },
-  ];
-  
-  const notifications = [
-    { id: '1', title: 'Nueva solicitud', message: 'Juan Pérez solicitó acceso a la plataforma', time: '10 min' },
-    { id: '2', title: 'Evento programado', message: 'Reunión de padres el viernes', time: '1 hora' },
-    { id: '3', title: 'Sistema actualizado', message: 'Se implementaron nuevas funciones', time: '3 horas' },
-  ];
-
-  const upcomingEvents = [
-    { id: '1', title: 'Reunión de profesores', date: '28 Mar', time: '10:00 AM', type: 'meeting' },
-    { id: '2', title: 'Entrega de calificaciones', date: '30 Mar', time: '09:00 AM', type: 'deadline' },
-    { id: '3', title: 'Junta directiva', date: '2 Abr', time: '14:30 PM', type: 'meeting' },
-  ];
-
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'meeting':
-        return <CalendarIcon color="primary" />;
-      case 'deadline':
-        return <TextSnippetIcon color="error" />;
-      default:
-        return <EventNoteIcon color="primary" />;
-    }
-  };
-
-  // Función para obtener color de fondo según rol usando el tema
-  const getRoleBgColor = (role: UserRole) => {
-    if (role === UserRole.ESTUDIANTE) {
-      return alpha(theme.palette.info.main, 0.2);
-    } else if (role === UserRole.PROFESOR) {
-      return alpha(theme.palette.primary.main, 0.2);
-    } else {
-      return alpha(theme.palette.success.main, 0.2);
-    }
-  };
-
-  // Función para obtener color de texto según rol usando el tema
-  const getRoleTextColor = (role: UserRole) => {
-    if (role === UserRole.ESTUDIANTE) {
-      return theme.palette.info.main;
-    } else if (role === UserRole.PROFESOR) {
-      return theme.palette.primary.main;
-    } else {
-      return theme.palette.success.main;
-    }
-  };
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -279,17 +101,16 @@ const AdminDashboard: React.FC = () => {
       </Box>
       
       {/* Mensaje de bienvenida */}
-      <Card 
+      <StyledCard 
         sx={{ 
           mb: 4, 
-          position: 'relative',
-          overflow: 'hidden',
           background: theme => `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
           color: 'white',
           boxShadow: theme => `0 8px 20px ${alpha(theme.palette.secondary.main, 0.2)}`
         }}
+        withDecoration
       >
-        <CardContent sx={{ position: 'relative', zIndex: 1, py: 3 }}>
+        <Box sx={{ position: 'relative', zIndex: 1, py: 3, px: 3 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={8}>
               <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -302,7 +123,6 @@ const AdminDashboard: React.FC = () => {
                 variant="contained" 
                 color="primary"
                 size="small"
-                endIcon={<ArrowForwardIcon />}
                 sx={{ 
                   mt: 1,
                   boxShadow: theme => `0 4px 10px ${alpha(theme.palette.primary.main, 0.3)}`
@@ -311,49 +131,15 @@ const AdminDashboard: React.FC = () => {
                 Ver resumen
               </Button>
             </Grid>
-            <Grid item xs={12} md={4} sx={{ display: { xs: 'none', md: 'block' } }}>
-              <Box sx={{ textAlign: 'right' }}>
-                <img 
-                  src="/assets/welcome-illustration.svg" 
-                  alt="Welcome" 
-                  width="150" 
-                  style={{ opacity: 0.9 }}
-                />
-              </Box>
-            </Grid>
           </Grid>
-        </CardContent>
-        
-        {/* Elementos decorativos */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '-30px',
-            right: '-30px',
-            width: '150px',
-            height: '150px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.1)',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: '-40px',
-            left: '30%',
-            width: '100px',
-            height: '100px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.05)',
-          }}
-        />
-      </Card>
+        </Box>
+      </StyledCard>
       
       {/* Tarjetas de estadísticas */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat, index) => (
           <Grid item xs={12} md={4} key={index}>
-            <StatsCard
+            <StatCard
               title={stat.title}
               value={stat.value}
               icon={stat.icon}
@@ -365,325 +151,7 @@ const AdminDashboard: React.FC = () => {
         ))}
       </Grid>
       
-      <Grid container spacing={3}>
-        {/* Usuarios recientes */}
-        <Grid item xs={12} lg={8}>
-          <Card sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
-            <CardHeader 
-              title="Usuarios Recientes" 
-              titleTypographyProps={{ 
-                variant: 'h6',
-                color: 'secondary.main',
-                fontWeight: 'bold'
-              }}
-              action={
-                <Box>
-                  <IconButton aria-label="settings">
-                    <MoreVertIcon />
-                  </IconButton>
-                  <Button 
-                    variant="text" 
-                    color="primary" 
-                    endIcon={<ArrowForwardIcon />}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  >
-                    Ver todos
-                  </Button>
-                </Box>
-              }
-            />
-            <Divider />
-            <CardContent sx={{ p: 0 }}>
-              <List sx={{ p: 0 }}>
-                {recentUsers.map((user, index) => (
-                  <React.Fragment key={user.id}>
-                    {index > 0 && <Divider component="li" />}
-                    <ListItem
-                      sx={{ 
-                        py: 1.5, 
-                        px: 3,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          backgroundColor: theme.palette.action.hover,
-                        }
-                      }}
-                      secondaryAction={
-                        <Button 
-                          variant="outlined" 
-                          size="small" 
-                          color="primary"
-                          sx={{ 
-                            borderRadius: '20px',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                              backgroundColor: 'primary.main',
-                              color: 'white'
-                            }
-                          }}
-                        >
-                          Ver perfil
-                        </Button>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Avatar 
-                          alt={user.name} 
-                          src={user.avatar}
-                          sx={{ 
-                            bgcolor: getRoleTextColor(user.role),
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                          }}
-                        >
-                          {user.name.charAt(0)}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText 
-                        primary={user.name} 
-                        // FIX: Usando Typography que no sea un <p> para evitar error de anidación
-                        secondary={
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            color="text.secondary"
-                          >
-                            <Chip
-                              label={
-                                user.role === UserRole.ESTUDIANTE ? 'Estudiante' : 
-                                user.role === UserRole.PROFESOR ? 'Profesor' :
-                                user.role === UserRole.TUTOR ? 'Tutor' : 'Administrador'
-                              }
-                              size="small"
-                              sx={{ 
-                                fontSize: '0.7rem',
-                                height: '20px',
-                                bgcolor: getRoleBgColor(user.role),
-                                color: getRoleTextColor(user.role),
-                                border: 'none'
-                              }}
-                            />
-                          </Typography>
-                        }
-                        primaryTypographyProps={{ fontWeight: 'medium' }}
-                      />
-                    </ListItem>
-                  </React.Fragment>
-                ))}
-              </List>
-            </CardContent>
-            
-            {/* Elemento decorativo */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '150px',
-                height: '150px',
-                borderBottomLeftRadius: '100%',
-                background: theme => alpha(theme.palette.primary.main, 0.08),
-                zIndex: 0,
-              }}
-            />
-          </Card>
-        </Grid>
-        
-        {/* Columna derecha */}
-        <Grid item xs={12} lg={4}>
-          <Grid container spacing={3} direction="column">
-            {/* Notificaciones */}
-            <Grid item xs={12}>
-              <Card sx={{ position: 'relative', overflow: 'hidden' }}>
-                <CardHeader 
-                  title="Notificaciones Recientes" 
-                  titleTypographyProps={{ 
-                    variant: 'h6', 
-                    color: 'secondary.main',
-                    fontWeight: 'bold'
-                  }}
-                  avatar={
-                    <Badge badgeContent={notifications.length} color="error">
-                      <NotificationsIcon color="primary" />
-                    </Badge>
-                  }
-                  action={
-                    <IconButton aria-label="settings">
-                      <MoreVertIcon />
-                    </IconButton>
-                  }
-                />
-                <Divider />
-                <CardContent sx={{ p: 0, maxHeight: '300px', overflow: 'auto' }}>
-                  <List sx={{ p: 0 }}>
-                    {notifications.map((notif, index) => (
-                      <React.Fragment key={notif.id}>
-                        {index > 0 && <Divider component="li" />}
-                        <ListItem 
-                          alignItems="flex-start" 
-                          sx={{ 
-                            py: 1.5, 
-                            px: 2, 
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                              backgroundColor: theme.palette.action.hover,
-                            }
-                          }}
-                        >
-                          <ListItemText 
-                            primary={
-                              <Typography variant="subtitle2" color="text.primary" fontWeight="medium">
-                                {notif.title}
-                              </Typography>
-                            }
-                            secondary={
-                              <Typography
-                                component="span"
-                                variant="body2"
-                                color="text.primary"
-                              >
-                                {notif.message}
-                                <Typography
-                                  component="span"
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{ 
-                                    display: 'inline-block',
-                                    mt: 1,
-                                    ml: 0.5,
-                                    bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                    px: 1,
-                                    py: 0.25,
-                                    borderRadius: '4px'
-                                  }}
-                                >
-                                  Hace {notif.time}
-                                </Typography>
-                              </Typography>
-                            }
-                          />
-                        </ListItem>
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </CardContent>
-                
-                {/* Elemento decorativo */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    width: '100px',
-                    height: '100px',
-                    borderTopRightRadius: '100%',
-                    background: theme => alpha(theme.palette.primary.main, 0.08),
-                    zIndex: 0,
-                  }}
-                />
-              </Card>
-            </Grid>
-
-            {/* Próximos eventos */}
-            <Grid item xs={12}>
-              <Card sx={{ position: 'relative', overflow: 'hidden' }}>
-                <CardHeader 
-                  title="Próximos Eventos" 
-                  titleTypographyProps={{ 
-                    variant: 'h6', 
-                    color: 'secondary.main',
-                    fontWeight: 'bold'
-                  }}
-                  avatar={<EventNoteIcon color="primary" />}
-                  action={
-                    <Button 
-                      variant="text" 
-                      color="primary" 
-                      endIcon={<ArrowForwardIcon />}
-                      size="small"
-                    >
-                      Ver todos
-                    </Button>
-                  }
-                />
-                <Divider />
-                <CardContent sx={{ p: 0 }}>
-                  <List>
-                    {upcomingEvents.map((event, index) => (
-                      <React.Fragment key={event.id}>
-                        {index > 0 && <Divider component="li" />}
-                        <ListItem 
-                          sx={{ 
-                            py: 1.5, 
-                            px: 2,
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                              backgroundColor: theme.palette.action.hover,
-                            }
-                          }}
-                        >
-                          <ListItemAvatar>
-                            <Avatar
-                              sx={{
-                                bgcolor: event.type === 'deadline' 
-                                  ? alpha(theme.palette.error.main, 0.2)
-                                  : alpha(theme.palette.primary.main, 0.2),
-                                color: event.type === 'deadline'
-                                  ? theme.palette.error.main
-                                  : theme.palette.primary.main,
-                                boxShadow: 'none'
-                              }}
-                            >
-                              {getEventIcon(event.type)}
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText 
-                            primary={
-                              <Typography variant="subtitle2" fontWeight="medium">
-                                {event.title}
-                              </Typography>
-                            } 
-                            secondary={
-                              <Typography component="span" variant="body2">
-                                <Chip 
-                                  label={event.date} 
-                                  size="small"
-                                  sx={{ 
-                                    mr: 1, 
-                                    bgcolor: theme.palette.action.hover,
-                                    fontSize: '0.7rem',
-                                    height: '20px'
-                                  }}
-                                />
-                                <Typography component="span" variant="caption" color="text.secondary">
-                                  {event.time}
-                                </Typography>
-                              </Typography>
-                            }
-                          />
-                        </ListItem>
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </CardContent>
-                
-                {/* Elemento decorativo */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '120px',
-                    height: '120px',
-                    borderBottomLeftRadius: '100%',
-                    background: theme => alpha(theme.palette.secondary.main, 0.08),
-                    zIndex: 0,
-                  }}
-                />
-              </Card>
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
+      {/* Resto del componente... */}
     </Box>
   );
 };

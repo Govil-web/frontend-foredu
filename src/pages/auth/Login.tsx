@@ -1,14 +1,11 @@
 // src/pages/auth/Login.tsx
 import React, { useEffect } from 'react';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { 
   Container, 
   Box, 
   Avatar, 
   Typography, 
-  TextField, 
   Button, 
   Grid, 
   Link, 
@@ -20,9 +17,35 @@ import {
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Logo from '../../components/design-system/Logo/Logo';
+import StyledTextField from '../../components/ui/StyledTextField';
 import { useAuth } from '../../hooks/useAuth';
-import { loginSchema, LoginFormValues } from '../../validations/authValidations';
-import { debugService } from '../../services/debugService';
+import { useFormState } from '../../hooks/useFormState';
+import { z } from 'zod';
+
+// Esquema de validación
+const loginSchema = z.object({
+  email: z.string().email('Por favor, ingrese un email válido'),
+  password: z.string().min(1, 'La contraseña es obligatoria'),
+  rememberMe: z.boolean().optional(),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+const validateLogin = (values: LoginFormValues) => {
+  try {
+    loginSchema.parse(values);
+    return {};
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return error.errors.reduce((acc, curr) => {
+        const path = curr.path[0] as keyof LoginFormValues;
+        acc[path] = curr.message;
+        return acc;
+      }, {} as Partial<Record<keyof LoginFormValues, string>>);
+    }
+    return {};
+  }
+};
 
 const Login: React.FC = () => {
   const { login, error, loading, isAuthenticated, user, clearError } = useAuth();
@@ -35,7 +58,7 @@ const Login: React.FC = () => {
   // Efecto para redirección automática si ya está autenticado
   useEffect(() => {
     if (isAuthenticated && user) {
-      debugService.log('Usuario autenticado, redirigiendo a la ruta apropiada', user);
+      console.log('Usuario autenticado, redirigiendo a la ruta apropiada', user);
       
       // Determinar la ruta de destino según el rol
       let targetRoute = '/';
@@ -54,7 +77,7 @@ const Login: React.FC = () => {
           break;
       }
       
-      debugService.log('Redirigiendo a:', targetRoute);
+      console.log('Redirigiendo a:', targetRoute);
       
       // Añadir un pequeño retraso para asegurar que la redirección ocurra después de que el componente se monte completamente
       setTimeout(() => {
@@ -71,28 +94,26 @@ const Login: React.FC = () => {
   }, [clearError]);
   
   const { 
-    control, 
-    handleSubmit, 
-    formState: { errors } 
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
+    values, 
+    errors, 
+    handleChange, 
+    handleSubmit 
+  } = useFormState<LoginFormValues>({
+    initialValues: {
       email: '',
       password: '',
       rememberMe: false,
+    },
+    validate: validateLogin,
+    onSubmit: async (data) => {
+      try {
+        console.log('Intentando iniciar sesión con:', data.email);
+        await login(data.email, data.password);
+      } catch (error) {
+        console.error('Error de inicio de sesión:', error);
+      }
     }
   });
-
-  const onSubmit = async (data: LoginFormValues) => {
-    try {
-      debugService.log('Intentando iniciar sesión con:', data.email);
-      await login(data.email, data.password);
-      // La redirección se maneja en el useEffect
-    } catch (error) {
-      // El error ya se maneja en el contexto de autenticación
-      debugService.error('Error de inicio de sesión:', error);
-    }
-  };
 
   return (
     <Container component="main" maxWidth="xs">
@@ -125,60 +146,47 @@ const Login: React.FC = () => {
           </Alert>
         )}
         
-        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ width: '100%' }}>
-          <Controller
+        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
+          <StyledTextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Correo electrónico"
             name="email"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Correo electrónico"
-                autoComplete="email"
-                autoFocus
-                error={!!errors.email}
-                helperText={errors.email?.message}
-                {...field}
-              />
-            )}
+            autoComplete="email"
+            autoFocus
+            value={values.email}
+            onChange={handleChange}
+            error={!!errors.email}
+            helperText={errors.email}
           />
           
-          <Controller
+          <StyledTextField
+            margin="normal"
+            required
+            fullWidth
             name="password"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label="Contraseña"
-                type="password"
-                id="password"
-                autoComplete="current-password"
-                error={!!errors.password}
-                helperText={errors.password?.message}
-                {...field}
-              />
-            )}
+            label="Contraseña"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={values.password}
+            onChange={handleChange}
+            error={!!errors.password}
+            helperText={errors.password}
           />
           
-          <Controller
-            name="rememberMe"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={
-                  <Checkbox 
-                    color="primary" 
-                    checked={field.value} 
-                    onChange={(e) => field.onChange(e.target.checked)} 
-                  />
-                }
-                label="Recordarme"
+          <FormControlLabel
+            control={
+              <Checkbox 
+                color="primary" 
+                checked={values.rememberMe} 
+                onChange={handleChange}
+                name="rememberMe"
               />
-            )}
+            }
+            label="Recordarme"
           />
           
           <Button
