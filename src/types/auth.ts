@@ -17,6 +17,31 @@ export interface User {
   activo?: boolean;
 }
 
+export interface UserRequestDTO {
+  id?: number;
+  email: string;
+  nombre: string;
+  apellido: string;
+  dni: string;
+  tipoDocumento: string;
+  telefono: string;
+  contrasena?: string;
+  institucion: string;
+}
+
+export interface UserResponseDTO {
+  id: number;
+  email: string;
+  nombre: string;
+  tipoDocumento: string;
+  dni: string;
+  apellido: string;
+  telefono: string;
+  institucion: string;
+  rol: string;
+  activo: boolean;
+}
+
 export interface LoginCredentials {
   email: string;
   contrasena: string;

@@ -1,5 +1,6 @@
-// src/pages/admin/ManageUsers.tsx
-import React, { useState } from 'react';
+// src/pages/admin/ManageUsers.tsx (actualizada)
+
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -22,10 +23,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  SelectChangeEvent,
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,39 +34,16 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { UserRole } from '../../types/auth';
-
-// Datos de ejemplo
-const users = [
-  { id: 1, name: 'Juan Pérez', email: 'juan.perez@example.com', role: UserRole.ESTUDIANTE, status: 'Activo' },
-  { id: 2, name: 'María García', email: 'maria.garcia@example.com', role: UserRole.PROFESOR, status: 'Activo' },
-  { id: 3, name: 'Carlos López', email: 'carlos.lopez@example.com', role: UserRole.TUTOR, status: 'Inactivo' },
-  { id: 4, name: 'Sofía Martínez', email: 'sofia.martinez@example.com', role: UserRole.ESTUDIANTE, status: 'Activo' },
-  { id: 5, name: 'Luis Rodríguez', email: 'luis.rodriguez@example.com', role: UserRole.ADMIN, status: 'Activo' },
-  { id: 6, name: 'Ana Sánchez', email: 'ana.sanchez@example.com', role: UserRole.ESTUDIANTE, status: 'Inactivo' },
-  { id: 7, name: 'Pablo González', email: 'pablo.gonzalez@example.com', role: UserRole.PROFESOR, status: 'Activo' },
-  { id: 8, name: 'Laura Fernández', email: 'laura.fernandez@example.com', role: UserRole.ESTUDIANTE, status: 'Activo' },
-  { id: 9, name: 'Daniel Torres', email: 'daniel.torres@example.com', role: UserRole.TUTOR, status: 'Activo' },
-  { id: 10, name: 'Elena Díaz', email: 'elena.diaz@example.com', role: UserRole.ESTUDIANTE, status: 'Inactivo' },
-];
-
-// Función para obtener el color del chip según el rol
-const getRoleColor = (role: UserRole) => {
-  switch (role) {
-    case UserRole.ADMIN:
-      return 'error';
-    case UserRole.PROFESOR:
-      return 'primary';
-    case UserRole.TUTOR:
-      return 'success';
-    case UserRole.ESTUDIANTE:
-      return 'info';
-    default:
-      return 'default';
-  }
-};
+import { userService } from '../../services/userService';
+import { UserResponseDTO, UserRequestDTO } from '../../types/auth';
+import UserForm from '../../components/admin/UserForm';
+import { useAuth } from '../../hooks/useAuth';
 
 const ManageUsers: React.FC = () => {
+  const { user } = useAuth();
+  const [users, setUsers] = useState<UserResponseDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,18 +52,36 @@ const ManageUsers: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  
-  // Estado para el formulario
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: UserRole.ESTUDIANTE,
-    status: 'Activo'
-  });
-  
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [selectedUser, setSelectedUser] = useState<UserResponseDTO | null>(null);
+
+  // Función para cargar usuarios
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await userService.getAll();
+      if (response.estado) {
+        setUsers(response.dataIterable || []);
+      } else {
+        setError(response.message);
+      }
+    } catch (err) {
+      setError('Error al conectar con el servidor');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   // Filtrar usuarios según el término de búsqueda
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -113,12 +108,7 @@ const ManageUsers: React.FC = () => {
     // Buscar el usuario seleccionado
     const userToEdit = users.find(user => user.id === selectedUserId);
     if (userToEdit) {
-      setFormData({
-        name: userToEdit.name,
-        email: userToEdit.email,
-        role: userToEdit.role,
-        status: userToEdit.status
-      });
+      setSelectedUser(userToEdit);
       setDialogMode('edit');
       setOpenDialog(true);
     }
@@ -130,20 +120,41 @@ const ManageUsers: React.FC = () => {
     handleCloseMenu();
   };
 
-  const confirmDelete = () => {
-    console.log('Usuario eliminado:', selectedUserId);
-    setDeleteConfirmOpen(false);
-    setSelectedUserId(null);
-    // Aquí iría la lógica para eliminar el usuario de la base de datos
+  const confirmDelete = async () => {
+    if (selectedUserId) {
+      setLoading(true);
+      try {
+        const response = await userService.delete(selectedUserId);
+        if (response.estado) {
+          fetchUsers();
+          setSnackbar({
+            open: true,
+            message: 'Usuario eliminado correctamente',
+            severity: 'success'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: response.message || 'Error al eliminar usuario',
+            severity: 'error'
+          });
+        }
+      } catch (err) {
+        setSnackbar({
+          open: true,
+          message: 'Error al conectar con el servidor',
+          severity: 'error'
+        });
+      } finally {
+        setLoading(false);
+        setDeleteConfirmOpen(false);
+        setSelectedUserId(null);
+      }
+    }
   };
 
   const handleAddUser = () => {
-    setFormData({
-      name: '',
-      email: '',
-      role: UserRole.ESTUDIANTE,
-      status: 'Activo'
-    });
+    setSelectedUser(null);
     setDialogMode('add');
     setOpenDialog(true);
   };
@@ -152,71 +163,101 @@ const ManageUsers: React.FC = () => {
     setOpenDialog(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
+  const handleSaveUser = async (userData: UserRequestDTO) => {
+    setLoading(true);
+    try {
+      let response;
+      if (dialogMode === 'add') {
+        response = await userService.create(userData);
+      } else {
+        response = await userService.update(userData);
+      }
 
-  const handleRoleChange = (e: SelectChangeEvent) => {
-    setFormData({
-      ...formData,
-      role: e.target.value as UserRole
-    });
-  };
-
-  const handleStatusChange = (e: SelectChangeEvent) => {
-    setFormData({
-      ...formData,
-      status: e.target.value
-    });
-  };
-
-  const handleSubmit = () => {
-    if (dialogMode === 'add') {
-      console.log('Nuevo usuario a añadir:', formData);
-      // Aquí iría la lógica para añadir el usuario a la base de datos
-    } else {
-      console.log('Usuario a actualizar:', selectedUserId, formData);
-      // Aquí iría la lógica para actualizar el usuario en la base de datos
+      if (response.estado) {
+        fetchUsers();
+        setOpenDialog(false);
+        setSnackbar({
+          open: true,
+          message: dialogMode === 'add' ? 'Usuario creado correctamente' : 'Usuario actualizado correctamente',
+          severity: 'success'
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: response.message || 'Error al guardar usuario',
+          severity: 'error'
+        });
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: 'Error al conectar con el servidor',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
     }
-    setOpenDialog(false);
   };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  // Si no es administrador, no tiene acceso a esta página
+  if (user?.role !== 'ROLE_ADMINISTRADOR') {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          No tienes permisos para acceder a esta página
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Gestión de Usuarios
-        </Typography>
-        
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddUser}
-        >
-          Nuevo Usuario
-        </Button>
-      </Box>
+      <Typography variant="h4" gutterBottom>
+        Gestión de Usuarios
+      </Typography>
       
       <Paper sx={{ mb: 3, p: 2 }}>
-        <TextField
-          fullWidth
-          placeholder="Buscar usuarios por nombre o email"
-          variant="outlined"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <TextField
+            placeholder="Buscar usuarios por nombre o email"
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ width: '70%' }}
+          />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddUser}
+          >
+            Nuevo Usuario
+          </Button>
+        </Box>
       </Paper>
+
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>
@@ -235,20 +276,28 @@ const ManageUsers: React.FC = () => {
               .map((user) => (
                 <TableRow key={user.id}>
                   <TableCell component="th" scope="row">
-                    {user.name}
+                    {`${user.nombre} ${user.apellido || ''}`}
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Chip
-                      label={user.role}
-                      color={getRoleColor(user.role)}
+                      label={
+                        user.rol === 'ROLE_ADMINISTRADOR' ? 'Administrador' : 
+                        user.rol === 'ROLE_PROFESOR' ? 'Profesor' :
+                        user.rol === 'ROLE_TUTOR' ? 'Tutor' : 'Estudiante'
+                      }
+                      color={
+                        user.rol === 'ROLE_ADMINISTRADOR' ? 'error' :
+                        user.rol === 'ROLE_PROFESOR' ? 'primary' :
+                        user.rol === 'ROLE_TUTOR' ? 'success' : 'info'
+                      }
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={user.status}
-                      color={user.status === 'Activo' ? 'success' : 'default'}
+                      label={user.activo ? 'Activo' : 'Inactivo'}
+                      color={user.activo ? 'success' : 'default'}
                       size="small"
                     />
                   </TableCell>
@@ -262,6 +311,13 @@ const ManageUsers: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ))}
+            {filteredUsers.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  No se encontraron usuarios
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
         <TablePagination
@@ -293,72 +349,14 @@ const ManageUsers: React.FC = () => {
         </MenuItem>
       </Menu>
 
-      {/* Diálogo para añadir/editar usuario */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {dialogMode === 'add' ? 'Añadir Nuevo Usuario' : 'Editar Usuario'}
-        </DialogTitle>
-        <DialogContent>
-          <Box component="form" sx={{ mt: 2 }} noValidate>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="name"
-              label="Nombre Completo"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              autoFocus
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Correo Electrónico"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="role-label">Rol</InputLabel>
-              <Select
-                labelId="role-label"
-                id="role"
-                value={formData.role}
-                label="Rol"
-                onChange={handleRoleChange}
-              >
-                <MenuItem value={UserRole.ADMIN}>Admin</MenuItem>
-                <MenuItem value={UserRole.PROFESOR}>Teacher</MenuItem>
-                <MenuItem value={UserRole.TUTOR}>Tutor</MenuItem>
-                <MenuItem value={UserRole.ESTUDIANTE}>Student</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="status-label">Estado</InputLabel>
-              <Select
-                labelId="status-label"
-                id="status"
-                value={formData.status}
-                label="Estado"
-                onChange={handleStatusChange}
-              >
-                <MenuItem value="Activo">Activo</MenuItem>
-                <MenuItem value="Inactivo">Inactivo</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {dialogMode === 'add' ? 'Añadir' : 'Guardar Cambios'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Formulario para añadir/editar usuario */}
+      <UserForm 
+        open={openDialog} 
+        onClose={handleCloseDialog} 
+        onSave={handleSaveUser}
+        isEdit={dialogMode === 'edit'}
+        user={selectedUser}
+      />
 
       {/* Diálogo de confirmación para eliminar */}
       <Dialog
@@ -378,6 +376,18 @@ const ManageUsers: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar para mensajes */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
