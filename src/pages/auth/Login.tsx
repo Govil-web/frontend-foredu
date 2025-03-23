@@ -1,6 +1,6 @@
 // src/pages/auth/Login.tsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { 
   Container, 
   Box, 
@@ -22,13 +22,13 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Logo from '../../components/design-system/Logo/Logo';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../store/authStore';
 import { UserRole } from '../../types/auth';
 
 const Login: React.FC = () => {
-  const { login, error, loading, isAuthenticated, user, clearError } = useAuth();
+  const { login, error, loading, isAuthenticated, user, clearError } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
+ // const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -36,7 +36,7 @@ const Login: React.FC = () => {
   const [localError, setLocalError] = useState<string | null>(null);
   
   // Obtener la ruta de origen si existe
-  const from = (location.state as any)?.from?.pathname || '/';
+  //const from = (location.state as any)?.from?.pathname || '/';
   
   // Efecto para redirección automática si ya está autenticado
   useEffect(() => {

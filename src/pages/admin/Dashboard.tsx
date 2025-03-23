@@ -31,7 +31,7 @@ import {
 import { styled } from '@mui/material/styles';
 import StyledCard from '../../components/ui/StyledCard';
 import StatCard from '../../components/ui/StatCard';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 // Importar datos mock
 import { mockCoursePerformance, mockStudentAttendance } from '../../mock-data/courses';

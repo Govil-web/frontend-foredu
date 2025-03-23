@@ -1,8 +1,8 @@
 // src/routes/ProtectedRoute.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../store/authStore';
 import { UserRole } from '../types/auth';
 
 interface ProtectedRouteProps {
@@ -14,11 +14,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   allowedRoles 
 }) => {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, checkAuth } = useAuthStore();
   const location = useLocation();
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
+
+  useEffect(() => {
+    const initialCheck = async () => {
+      await checkAuth();
+      setInitialCheckDone(true);
+    };
+    
+    if (!isAuthenticated && !initialCheckDone) {
+      initialCheck();
+    } else {
+      setInitialCheckDone(true);
+    }
+  }, [checkAuth, isAuthenticated, initialCheckDone]);
 
   // Mostrar loading mientras se verifica la autenticación
-  if (loading) {
+  if (loading || !initialCheckDone) {
     return (
       <Box sx={{ 
         display: 'flex', 

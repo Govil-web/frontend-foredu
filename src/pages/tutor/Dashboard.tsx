@@ -23,7 +23,7 @@ import {
   Notifications as NotificationsIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const TutorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -50,7 +50,7 @@ const TutorDashboard: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
-        Bienvenido, {user?.name || 'Tutor'}
+        Bienvenido, {user?.nombre || 'Tutor'}
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
