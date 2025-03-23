@@ -2,7 +2,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../types/auth';
 
 interface ProtectedRouteProps {
@@ -33,13 +33,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirigir a login si no está autenticado
   if (!isAuthenticated) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
- // Si hay roles permitidos y el usuario no tiene uno de ellos
- if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
-  return <Navigate to="/unauthorized" replace />;
-}
+  // Si hay roles permitidos y el usuario no tiene uno de ellos
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   // Si está autenticado y tiene permisos, mostrar el contenido
   return <>{children}</>;

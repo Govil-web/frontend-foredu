@@ -1,7 +1,6 @@
 // src/services/authService.ts
 import axios from 'axios';
-import { User, AuthResponse } from '../types/auth';
-import { debugService } from './debugService';
+import { User, AuthResponse } from '../../types/auth';
 import { tokenService } from './tokenService';
 
 // Configuración de axios
@@ -18,12 +17,12 @@ api.interceptors.request.use(
     const token = tokenService.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      debugService.log('Añadiendo token a la solicitud:', config.url);
+      console.log('Añadiendo token a la solicitud:', config.url);
     }
     return config;
   },
   (error) => {
-    debugService.error('Error en interceptor de solicitud:', error);
+    console.error('Error en interceptor de solicitud:', error);
     return Promise.reject(error);
   }
 );
@@ -33,7 +32,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      debugService.warn('Error 401: Token inválido o expirado');
+      console.warn('Error 401: Token inválido o expirado');
       tokenService.removeToken();
       
       // Solo redirigir a login si no estamos ya en esa página
@@ -47,7 +46,7 @@ api.interceptors.response.use(
 
 export const authService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    debugService.log('Enviando solicitud de login para:', email);
+    console.log('Enviando solicitud de login para:', email);
       
     try {
       const response = await api.post('/auth/login', {
@@ -55,14 +54,11 @@ export const authService = {
         contrasena: password
       });
         
-      debugService.log('Respuesta de login exitosa:', {
+      console.log('Respuesta de login exitosa:', {
         status: response.status,
         statusText: response.statusText
       });
       
-      // Log completo para depuración
-      debugService.log('Datos de respuesta:', JSON.stringify(response.data));
-        
       // Extraer token - soportar ambos formatos de respuesta
       let token;
       
@@ -71,7 +67,7 @@ export const authService = {
       } else if (response.data.jwtToken) {
         token = response.data.jwtToken;
       } else {
-        debugService.error('Estructura de respuesta:', response.data);
+        console.error('Estructura de respuesta:', response.data);
         throw new Error('No se pudo encontrar un token válido en la respuesta');
       }
       
@@ -79,18 +75,16 @@ export const authService = {
       if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
         throw new Error('El formato del token recibido no es válido');
       }
-        
-      // Guardar token en localStorage
+      
+      // Guardar token y extraer información del usuario
       tokenService.saveToken(token);
-        
-      // Extraer información del usuario desde el token
       const user = tokenService.getUserFromToken();
         
       if (!user) {
         throw new Error('No se pudo extraer la información del usuario del token');
       }
         
-      debugService.log('Información de usuario extraída del token:', user);
+      console.log('Información de usuario extraída del token:', user);
         
       // Construir y devolver objeto AuthResponse
       return {
@@ -102,26 +96,25 @@ export const authService = {
       tokenService.removeToken();
         
       const errorMessage = error.response?.data?.message || error.message || 'Error de autenticación';
-      debugService.error('Error en solicitud de login:', errorMessage);
+      console.error('Error en solicitud de login:', errorMessage);
       throw error;
     }
-  }
-,
+  },
   
   logout: async (): Promise<void> => {
     const token = tokenService.getToken();
     
     if (!token) {
-      debugService.log('Intento de logout sin token disponible');
+      console.log('Intento de logout sin token disponible');
       return;
     }
     
     try {
-      debugService.log('Enviando solicitud de logout al servidor');
+      console.log('Enviando solicitud de logout al servidor');
       await api.post('/auth/logout');
-      debugService.log('Logout exitoso en el servidor');
+      console.log('Logout exitoso en el servidor');
     } catch (error: any) {
-      debugService.error('Error durante logout en el servidor:', error.response?.data || error.message);
+      console.error('Error durante logout en el servidor:', error.response?.data || error.message);
       // No propagamos el error para asegurar que siempre se limpie el token local
     } finally {
       tokenService.removeToken();
@@ -129,24 +122,15 @@ export const authService = {
   },
   
   getCurrentUser: async (): Promise<User> => {
-    debugService.log('Obteniendo información del usuario actual');
+    console.log('Obteniendo información del usuario actual');
     
-    // Primero intentamos obtener el usuario del token
-    const userFromToken = tokenService.getUserFromToken();
-    
-    if (userFromToken) {
-      debugService.log('Usuario obtenido del token JWT');
-      return userFromToken;
-    }
-    
-    // Si no hay usuario en el token o está expirado, intentamos obtenerlo del endpoint /me
     try {
-      debugService.log('Solicitando información del usuario al servidor');
+      console.log('Solicitando información del usuario al servidor');
       const response = await api.get<User>('/auth/me');
-      debugService.log('Información de usuario recibida del servidor');
+      console.log('Información de usuario recibida del servidor');
       return response.data;
     } catch (error: any) {
-      debugService.error('Error al obtener usuario del servidor:', error.response?.data || error.message);
+      console.error('Error al obtener usuario del servidor:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -154,7 +138,7 @@ export const authService = {
   isAuthenticated: (): boolean => {
     // Verificar si hay token y no está expirado
     const isAuth = tokenService.hasToken() && !tokenService.isTokenExpired();
-    debugService.log(`Verificación de autenticación: ${isAuth ? 'Autenticado' : 'No autenticado'}`);
+    console.log(`Verificación de autenticación: ${isAuth ? 'Autenticado' : 'No autenticado'}`);
     return isAuth;
   }
 };

@@ -1,11 +1,12 @@
 // src/pages/auth/Login.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { 
   Container, 
   Box, 
   Avatar, 
   Typography, 
+  TextField,
   Button, 
   Grid, 
   Link, 
@@ -14,43 +15,25 @@ import {
   Checkbox, 
   Alert,
   CircularProgress,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Logo from '../../components/design-system/Logo/Logo';
-import StyledTextField from '../../components/ui/StyledTextField';
 import { useAuth } from '../../hooks/useAuth';
-import { useFormState } from '../../hooks/useFormState';
-import { z } from 'zod';
-
-// Esquema de validación
-const loginSchema = z.object({
-  email: z.string().email('Por favor, ingrese un email válido'),
-  password: z.string().min(1, 'La contraseña es obligatoria'),
-  rememberMe: z.boolean().optional(),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-
-const validateLogin = (values: LoginFormValues) => {
-  try {
-    loginSchema.parse(values);
-    return {};
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return error.errors.reduce((acc, curr) => {
-        const path = curr.path[0] as keyof LoginFormValues;
-        acc[path] = curr.message;
-        return acc;
-      }, {} as Partial<Record<keyof LoginFormValues, string>>);
-    }
-    return {};
-  }
-};
+import { UserRole } from '../../types/auth';
 
 const Login: React.FC = () => {
   const { login, error, loading, isAuthenticated, user, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   
   // Obtener la ruta de origen si existe
   const from = (location.state as any)?.from?.pathname || '/';
@@ -63,57 +46,51 @@ const Login: React.FC = () => {
       // Determinar la ruta de destino según el rol
       let targetRoute = '/';
       switch (user.role) {
-        case 'ROLE_ADMINISTRADOR':
+        case UserRole.ADMIN:
           targetRoute = '/admin/dashboard';
           break;
-        case 'ROLE_PROFESOR':
+        case UserRole.PROFESOR:
           targetRoute = '/teacher/dashboard';
           break;
-        case 'ROLE_ESTUDIANTE':
+        case UserRole.ESTUDIANTE:
           targetRoute = '/student/dashboard';
           break;
-        case 'ROLE_TUTOR':
+        case UserRole.TUTOR:
           targetRoute = '/tutor/dashboard';
           break;
       }
       
       console.log('Redirigiendo a:', targetRoute);
-      
-      // Añadir un pequeño retraso para asegurar que la redirección ocurra después de que el componente se monte completamente
-      setTimeout(() => {
-        navigate(targetRoute, { replace: true });
-      }, 100);
+      navigate(targetRoute, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
   
-  // Limpiar errores al desmontar o cuando cambia la ruta
+  // Limpiar errores al desmontar
   useEffect(() => {
     return () => {
       clearError();
     };
   }, [clearError]);
   
-  const { 
-    values, 
-    errors, 
-    handleChange, 
-    handleSubmit 
-  } = useFormState<LoginFormValues>({
-    initialValues: {
-      email: '',
-      password: '',
-      rememberMe: false,
-    },
-    validate: validateLogin,
-    onSubmit: async (data) => {
-      try {
-        console.log('Intentando iniciar sesión con:', data.email);
-        await login(data.email, data.password);
-      } catch (error) {
-        console.error('Error de inicio de sesión:', error);
-      }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    
+    if (!email || !password) {
+      setLocalError('Por favor, complete todos los campos');
+      return;
     }
-  });
+    
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error('Error de inicio de sesión:', error);
+    }
+  };
+
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
     <Container component="main" maxWidth="xs">
@@ -140,14 +117,14 @@ const Login: React.FC = () => {
           Iniciar sesión
         </Typography>
         
-        {error && (
+        {(error || localError) && (
           <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-            {error}
+            {error || localError}
           </Alert>
         )}
         
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
-          <StyledTextField
+        <Box component="form" onSubmit={handleLogin} noValidate sx={{ width: '100%' }}>
+          <TextField
             margin="normal"
             required
             fullWidth
@@ -156,33 +133,44 @@ const Login: React.FC = () => {
             name="email"
             autoComplete="email"
             autoFocus
-            value={values.email}
-            onChange={handleChange}
-            error={!!errors.email}
-            helperText={errors.email}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={!!localError && !email}
           />
           
-          <StyledTextField
+          <TextField
             margin="normal"
             required
             fullWidth
             name="password"
             label="Contraseña"
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="password"
             autoComplete="current-password"
-            value={values.password}
-            onChange={handleChange}
-            error={!!errors.password}
-            helperText={errors.password}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={!!localError && !password}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleTogglePasswordVisibility}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           
           <FormControlLabel
             control={
               <Checkbox 
                 color="primary" 
-                checked={values.rememberMe} 
-                onChange={handleChange}
+                checked={rememberMe} 
+                onChange={(e) => setRememberMe(e.target.checked)}
                 name="rememberMe"
               />
             }

@@ -5,7 +5,6 @@ import { BrowserRouter } from 'react-router-dom';
 import foreduTheme from './theme/theme'; // Importa directamente el tema completo
 import AppRoutes from './routes/AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
-import AuthDebugger from './components/debug/AuthDebugger';
 
 // Importar CSS global con la fuente Candal
 import './index.css'; // Asegúrate de que este archivo tenga el contenido que te recomendé
@@ -30,7 +29,6 @@ function App() {
           <BrowserRouter>
             <AppRoutes />
             {/* Herramienta de depuración en desarrollo */}
-            <AuthDebugger />
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>

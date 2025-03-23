@@ -1,9 +1,8 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { User } from '../types/auth';
-import { authService } from '../services/authService';
-import { debugService } from '../services/debugService';
-import { tokenService } from '../services/tokenService';
+import { authService } from '../services/auth/authService';
+import { tokenService } from '../services/auth/tokenService';
 import { CircularProgress, Box } from '@mui/material';
 
 interface AuthContextType {
@@ -26,45 +25,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
-  // Habilitar depuración en desarrollo
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      debugService.enable(true);
-    }
-  }, []);
-
   // Verificar si hay un token válido al iniciar
   useEffect(() => {
     const initAuth = async () => {
       try {
         setLoading(true);
-        debugService.log('Iniciando verificación de autenticación');
+        console.log('Iniciando verificación de autenticación');
         
-        if (authService.isAuthenticated()) {
-          debugService.log('Token válido encontrado, obteniendo usuario');
+        if (tokenService.hasToken() && !tokenService.isTokenExpired()) {
+          console.log('Token válido encontrado, obteniendo usuario');
           
           // Intentar obtener el usuario directamente del token
           const userFromToken = tokenService.getUserFromToken();
           
           if (userFromToken) {
-            debugService.log('Usuario obtenido del token:', userFromToken);
+            console.log('Usuario obtenido del token:', userFromToken);
             setUser(userFromToken);
           } else {
             // Si no podemos obtener el usuario del token, lo pedimos al servidor
             try {
               const userData = await authService.getCurrentUser();
-              debugService.log('Usuario obtenido del servidor:', userData);
+              console.log('Usuario obtenido del servidor:', userData);
               setUser(userData);
             } catch (err) {
-              debugService.error('Error al obtener usuario del servidor:', err);
+              console.error('Error al obtener usuario del servidor:', err);
               await logout(); // Limpia la sesión si hay error
             }
           }
         } else {
-          debugService.log('No hay token válido');
+          console.log('No hay token válido');
+          // Si no hay token válido, aseguramos que el usuario sea null
+          setUser(null);
         }
       } catch (err) {
-        debugService.error('Error en la inicialización de autenticación:', err);
+        console.error('Error en la inicialización de autenticación:', err);
       } finally {
         setLoading(false);
         setInitialCheckDone(true);
@@ -79,18 +73,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
     
     try {
-      debugService.log('Iniciando proceso de login para:', email);
+      console.log('Iniciando proceso de login para:', email);
       const { user, token } = await authService.login(email, password);
       
-      if (!user) {
-        throw new Error('No se recibió información del usuario');
+      if (!user || !token) {
+        throw new Error('No se recibió información del usuario o token');
       }
       
-      debugService.log('Login exitoso, usuario:', user);
+      // Guardar el token explícitamente
+      tokenService.saveToken(token);
+      
+      console.log('Login exitoso, usuario:', user);
       setUser(user);
       return;
     } catch (err: any) {
-      debugService.error('Error durante el proceso de login:', err);
+      console.error('Error durante el proceso de login:', err);
       
       // Manejo de errores específicos
       if (err.response?.status === 400) {
@@ -116,16 +113,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = async () => {
     setLoading(true);
     try {
-      debugService.log('Iniciando proceso de logout');
+      console.log('Iniciando proceso de logout');
       await authService.logout();
-      debugService.log('Logout exitoso');
+      console.log('Logout exitoso');
     } catch (err) {
-      debugService.error('Error durante el logout:', err);
+      console.error('Error durante el logout:', err);
     } finally {
       tokenService.removeToken();
       setUser(null);
       setLoading(false);
-      debugService.log('Sesión cerrada completamente');
+      console.log('Sesión cerrada completamente');
     }
   };
 

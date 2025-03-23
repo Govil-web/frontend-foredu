@@ -34,7 +34,7 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { userService } from '../../services/userService';
+import { userService } from '../../services/user/userService';
 import { UserResponseDTO, UserRequestDTO } from '../../types/auth';
 import UserForm from '../../components/admin/UserForm';
 import { useAuth } from '../../hooks/useAuth';
@@ -64,7 +64,7 @@ const ManageUsers: React.FC = () => {
       if (response.estado) {
         setUsers(response.dataIterable || []);
       } else {
-        setError(response.message);
+        setError(response.message ?? null);
       }
     } catch (err) {
       setError('Error al conectar con el servidor');
@@ -85,7 +85,7 @@ const ManageUsers: React.FC = () => {
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
 

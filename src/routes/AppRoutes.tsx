@@ -1,8 +1,9 @@
 // src/routes/AppRoutes.tsx
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole } from '../types/auth';
 import ProtectedRoute from './ProtectedRoute';
+import { useAuth } from '../hooks/useAuth';
 
 // Layouts
 import MainLayout from '../components/layout/MainLayout/MainLayout';
@@ -17,6 +18,8 @@ import Unauthorized from '../pages/auth/Unauthorized';
 // Páginas de administrador
 import AdminDashboard from '../pages/admin/Dashboard';
 import ManageUsers from '../pages/admin/ManageUsers';
+import AdminReports from '../pages/admin/Reports';
+import AdminSettings from '../pages/admin/Settings';
 
 // Páginas de profesor
 import TeacherDashboard from '../pages/teacher/Dashboard';
@@ -32,20 +35,40 @@ import TutorDashboard from '../pages/tutor/Dashboard';
 import StudentProgress from '../pages/tutor/StudentProgress';
 
 // Páginas compartidas
-//import Calendar from '../pages/shared/Calendar';
-//import Messages from '../pages/shared/Messages';
 import Profile from '../pages/shared/Profile';
 
 const AppRoutes: React.FC = () => {
-
- 
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirigir basado en el rol del usuario cuando está autenticado
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const pathSegments = window.location.pathname.split('/');
+      // Si el usuario está en la página de inicio o login, redirigir a su dashboard
+      if (pathSegments.length <= 1 || pathSegments[1] === 'login') {
+        switch (user.role) {
+          case UserRole.ADMIN:
+            navigate('/admin/dashboard', { replace: true });
+            break;
+          case UserRole.PROFESOR:
+            navigate('/teacher/dashboard', { replace: true });
+            break;
+          case UserRole.ESTUDIANTE:
+            navigate('/student/dashboard', { replace: true });
+            break;
+          case UserRole.TUTOR:
+            navigate('/tutor/dashboard', { replace: true });
+            break;
+        }
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   return (
     <Routes>
-      {/* Redirección a la página de inicio según el rol */}
-      <Route path="/" element={<Landing />} />
-
       {/* Rutas públicas */}
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -58,7 +81,9 @@ const AppRoutes: React.FC = () => {
             <Routes>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<ManageUsers />} />
-              {/* Más rutas de administrador */}
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
           </MainLayout>
         </ProtectedRoute>
@@ -72,7 +97,7 @@ const AppRoutes: React.FC = () => {
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="grades" element={<GradeManagement />} />
               <Route path="attendance" element={<AttendanceManagement />} />
-              {/* Más rutas de profesor */}
+              <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
             </Routes>
           </MainLayout>
         </ProtectedRoute>
@@ -85,7 +110,7 @@ const AppRoutes: React.FC = () => {
             <Routes>
               <Route path="dashboard" element={<StudentDashboard />} />
               <Route path="grades" element={<StudentGrades />} />
-              {/* Más rutas de estudiante */}
+              <Route path="*" element={<Navigate to="/student/dashboard" replace />} />
             </Routes>
           </MainLayout>
         </ProtectedRoute>
@@ -98,33 +123,17 @@ const AppRoutes: React.FC = () => {
             <Routes>
               <Route path="dashboard" element={<TutorDashboard />} />
               <Route path="progress" element={<StudentProgress />} />
-              {/* Más rutas de tutor */}
+              <Route path="*" element={<Navigate to="/tutor/dashboard" replace />} />
             </Routes>
           </MainLayout>
         </ProtectedRoute>
       } />
 
       {/* Rutas compartidas */}
-    {/*  <Route path="/calendar" element={
-        <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT, UserRole.TUTOR]}>
-          <MainLayout>
-            <Calendar />
-          </MainLayout>
-        </ProtectedRoute>
-      } />*/}
-      
-     {/*<Route path="/messages" element={
-        <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT, UserRole.TUTOR]}>
-          <MainLayout>
-           <Messages />
-          </MainLayout>
-        </ProtectedRoute>
-      } />*/}  
-      
       <Route path="/profile" element={
         <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.PROFESOR, UserRole.ESTUDIANTE, UserRole.TUTOR]}>
           <MainLayout>
-           <Profile />
+            <Profile />
           </MainLayout>
         </ProtectedRoute>
       } />

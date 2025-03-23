@@ -1,46 +1,39 @@
 // src/services/tokenService.ts
-import { JwtPayload, User, UserRole } from '../types/auth';
-import { debugService } from './debugService';
-
+import { JwtPayload, User, UserRole } from '../../types/auth';
 
 export const tokenService = {
-
   saveToken(token: string): void {
     if (!token) {
-      debugService.error('Intento de guardar un token vacío o nulo');
+      console.error('Intento de guardar un token vacío o nulo');
       return;
     }
     localStorage.setItem('token', token);
-    debugService.log('Token guardado en localStorage');
+    console.log('Token guardado en localStorage');
   },
-
 
   getToken(): string | null {
     return localStorage.getItem('token');
   },
 
- 
   removeToken(): void {
     localStorage.removeItem('token');
-    debugService.log('Token eliminado de localStorage');
+    console.log('Token eliminado de localStorage');
   },
 
- 
   hasToken(): boolean {
     return !!this.getToken();
   },
 
- 
   decodeToken(token: string): JwtPayload | null {
     try {
       if (!token || typeof token !== 'string') {
-        debugService.error('Token inválido: token nulo o no es string');
+        console.error('Token inválido: token nulo o no es string');
         return null;
       }
 
       const parts = token.split('.');
       if (parts.length !== 3) {
-        debugService.error('Token inválido: formato incorrecto, debe tener 3 partes');
+        console.error('Token inválido: formato incorrecto, debe tener 3 partes');
         return null;
       }
 
@@ -57,27 +50,26 @@ export const tokenService = {
 
       return JSON.parse(jsonPayload);
     } catch (error) {
-      debugService.error('Error al decodificar token:', error);
+      console.error('Error al decodificar token:', error);
       return null;
     }
   },
 
-  
   getUserFromToken(): User | null {
     const token = this.getToken();
     if (!token) {
-      debugService.log('No hay token almacenado');
+      console.log('No hay token almacenado');
       return null;
     }
 
     const payload = this.decodeToken(token);
     if (!payload) {
-      debugService.error('No se pudo extraer información del payload');
+      console.error('No se pudo extraer información del payload');
       return null;
     }
 
     if (!payload.id || !payload.sub || !payload.role) {
-      debugService.error('Payload incompleto, falta información del usuario');
+      console.error('Payload incompleto, falta información del usuario');
       return null;
     }
 
@@ -88,7 +80,7 @@ export const tokenService = {
       role: payload.role as UserRole,
     };
 
-    debugService.log('Usuario extraído del token:', user);
+    console.log('Usuario extraído del token:', user);
     return user;
   },
 
@@ -104,7 +96,7 @@ export const tokenService = {
     const isExpired = payload.exp < currentTime;
 
     if (isExpired) {
-      debugService.warn('Token expirado');
+      console.warn('Token expirado');
     }
 
     return isExpired;
