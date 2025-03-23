@@ -1,29 +1,23 @@
-// src/services/userService.ts
-import api from '../auth/authService';
+// src/services/api/userService.ts
+import { apiClient, ApiResponse } from './axiosConfig';
 import { UserRequestDTO, UserResponseDTO } from '../../types/auth';
 
-// Interfaz para respuestas del servidor
-interface ApiResponse<T> {
-  estado: boolean;
-  message?: string;
-  data?: T;
-  dataIterable?: T[];
-}
+// URL base para las operaciones de usuarios
+const BASE_URL = '/user';
 
 export const userService = {
   /**
    * Obtiene todos los usuarios del sistema
-   * @returns Promise con los datos de los usuarios
+   * @returns Promise con la respuesta de los usuarios
    */
   getAll: async (): Promise<ApiResponse<UserResponseDTO>> => {
     try {
-      const response = await api.get<ApiResponse<UserResponseDTO>>('/usuarios');
-      return response.data;
-    } catch (error: any) {
+      return await apiClient.get<ApiResponse<UserResponseDTO>>(`${BASE_URL}/getAll`);
+    } catch (error) {
       console.error('Error al obtener usuarios:', error);
       return {
         estado: false,
-        message: error.response?.data?.message || 'Error al obtener usuarios'
+        message: 'Error al obtener usuarios'
       };
     }
   },
@@ -31,17 +25,16 @@ export const userService = {
   /**
    * Obtiene un usuario específico por ID
    * @param id ID del usuario a obtener
-   * @returns Promise con los datos del usuario
+   * @returns Promise con la respuesta del usuario
    */
   getById: async (id: number): Promise<ApiResponse<UserResponseDTO>> => {
     try {
-      const response = await api.get<ApiResponse<UserResponseDTO>>(`/usuarios/${id}`);
-      return response.data;
-    } catch (error: any) {
+      return await apiClient.get<ApiResponse<UserResponseDTO>>(`${BASE_URL}/${id}`);
+    } catch (error) {
       console.error(`Error al obtener usuario con ID ${id}:`, error);
       return {
         estado: false,
-        message: error.response?.data?.message || 'Error al obtener el usuario'
+        message: 'Error al obtener el usuario'
       };
     }
   },
@@ -53,13 +46,12 @@ export const userService = {
    */
   create: async (userData: UserRequestDTO): Promise<ApiResponse<UserResponseDTO>> => {
     try {
-      const response = await api.post<ApiResponse<UserResponseDTO>>('/usuarios', userData);
-      return response.data;
-    } catch (error: any) {
+      return await apiClient.post<ApiResponse<UserResponseDTO>>(BASE_URL, userData);
+    } catch (error) {
       console.error('Error al crear usuario:', error);
       return {
         estado: false,
-        message: error.response?.data?.message || 'Error al crear el usuario'
+        message: 'Error al crear el usuario'
       };
     }
   },
@@ -78,13 +70,12 @@ export const userService = {
     }
 
     try {
-      const response = await api.put<ApiResponse<UserResponseDTO>>(`/usuarios/${userData.id}`, userData);
-      return response.data;
-    } catch (error: any) {
+      return await apiClient.put<ApiResponse<UserResponseDTO>>(`${BASE_URL}/${userData.id}`, userData);
+    } catch (error) {
       console.error(`Error al actualizar usuario con ID ${userData.id}:`, error);
       return {
         estado: false,
-        message: error.response?.data?.message || 'Error al actualizar el usuario'
+        message: 'Error al actualizar el usuario'
       };
     }
   },
@@ -96,13 +87,12 @@ export const userService = {
    */
   delete: async (id: number): Promise<ApiResponse<null>> => {
     try {
-      const response = await api.delete<ApiResponse<null>>(`/usuarios/${id}`);
-      return response.data;
-    } catch (error: any) {
+      return await apiClient.delete<ApiResponse<null>>(`${BASE_URL}/${id}`);
+    } catch (error) {
       console.error(`Error al eliminar usuario con ID ${id}:`, error);
       return {
         estado: false,
-        message: error.response?.data?.message || 'Error al eliminar el usuario'
+        message: 'Error al eliminar el usuario'
       };
     }
   },
@@ -115,13 +105,12 @@ export const userService = {
    */
   toggleActive: async (id: number, active: boolean): Promise<ApiResponse<UserResponseDTO>> => {
     try {
-      const response = await api.patch<ApiResponse<UserResponseDTO>>(`/usuarios/${id}/estado`, { activo: active });
-      return response.data;
-    } catch (error: any) {
+      return await apiClient.patch<ApiResponse<UserResponseDTO>>(`${BASE_URL}/${id}/estado`, { activo: active });
+    } catch (error) {
       console.error(`Error al cambiar estado del usuario con ID ${id}:`, error);
       return {
         estado: false,
-        message: error.response?.data?.message || 'Error al cambiar estado del usuario'
+        message: 'Error al cambiar estado del usuario'
       };
     }
   }

@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { User } from '../types/auth';
-import { authService } from '../services/auth/authService';
+import { authService } from '../services/api/authService';
 import { tokenService } from '../services/auth/tokenService';
 import { CircularProgress, Box } from '@mui/material';
 

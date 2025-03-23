@@ -34,7 +34,7 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { userService } from '../../services/user/userService';
+import { userService } from '../../services/api/userService';
 import { UserResponseDTO, UserRequestDTO } from '../../types/auth';
 import UserForm from '../../components/admin/UserForm';
 import { useAuth } from '../../hooks/useAuth';
