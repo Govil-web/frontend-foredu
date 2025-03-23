@@ -1,4 +1,3 @@
-// src/components/layout/AppHeader/AppHeader.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -21,27 +20,8 @@ import {
   Logout as LogoutIcon,
   Notifications as NotificationsIcon,
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import { styleUtils } from '../../../utils/styleUtils';
 import { User } from '../../../types/auth';
-
-const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: theme.palette.secondary.main,
-  boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.1)',
-  zIndex: theme.zIndex.drawer + 1,
-  position: 'fixed',
-}));
-
-const HeaderDecoration = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  top: 0,
-  right: 0,
-  width: '150px',
-  height: '150px',
-  borderBottomLeftRadius: '100%',
-  background: theme.palette.primary.main,
-  opacity: 0.1,
-  zIndex: 0,
-}));
 
 interface AppHeaderProps {
   open: boolean;
@@ -77,18 +57,29 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   };
 
   return (
-    <StyledAppBar
+    <AppBar
       position="fixed"
       sx={{
-        width: { sm: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
+        width: { 
+          sm: open ? `calc(100% - ${drawerWidth}px)` : '100%' 
+        },
         ml: { sm: open ? `${drawerWidth}px` : 0 },
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.leavingScreen,
         }),
+        backgroundColor: theme.palette.secondary.main,
+        ...styleUtils.boxShadow(theme, 'low'),
+        zIndex: theme.zIndex.drawer + 1,
       }}
     >
-      <Toolbar sx={{ position: 'relative', overflow: 'hidden' }}>
+      <Toolbar sx={{ 
+        position: 'relative', 
+        overflow: 'hidden',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
         <IconButton
           color="inherit"
           aria-label="open drawer"
@@ -98,12 +89,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         >
           <MenuIcon />
         </IconButton>
-        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, zIndex: 1 }}>
+        
+        <Typography variant="h6" noWrap sx={{ flexGrow: 1, zIndex: 1 }}>
           Sistema de Gestión Escolar
         </Typography>
         
-        {/* Íconos de la barra superior */}
-        <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          zIndex: 1 
+        }}>
           <Tooltip title="Notificaciones">
             <IconButton color="inherit">
               <Badge badgeContent={3} color="error">
@@ -113,7 +108,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </Tooltip>
           
           <Tooltip title="Perfil y Configuración">
-            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, ml: 2 }}>
+            <IconButton 
+              onClick={handleOpenUserMenu} 
+              sx={{ 
+                p: 0, 
+                ml: 2,
+                ...styleUtils.hoverEffect(theme)
+              }}
+            >
               <Avatar 
                 alt={user?.nombre} 
                 sx={{ 
@@ -121,7 +123,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                   color: '#fff',
                   width: 40,
                   height: 40,
-                  boxShadow: '0px 2px 8px rgba(233, 81, 29, 0.3)'
+                  boxShadow: `0 4px 10px ${theme.palette.primary.main}30`
                 }}
               >
                 {user?.nombre?.charAt(0)}
@@ -160,10 +162,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </Menu>
         </Box>
         
-        {/* Elemento decorativo */}
-        <HeaderDecoration />
+        <Box
+          sx={{
+            ...styleUtils.backgroundDecoration(theme, {
+              color: theme.palette.primary.main, 
+              size: 150, 
+              position: 'top-right'
+            })
+          }}
+        />
       </Toolbar>
-    </StyledAppBar>
+    </AppBar>
   );
 };
 

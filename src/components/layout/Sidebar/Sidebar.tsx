@@ -1,4 +1,3 @@
-// src/components/layout/Sidebar/Sidebar.tsx
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import {
@@ -26,90 +25,18 @@ import {
   Assessment as AssessmentIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import { styleUtils } from '../../../utils/styleUtils';
 import { UserRole } from '../../../types/auth';
-import Logo from '../../design-system/Logo/Logo';
+import Logo from '../../../assets/foredulogo.png';
 
 const drawerWidth = 260;
 
-const StyledDrawer = styled(Drawer)(({ theme }) => ({
-  width: drawerWidth,
-  flexShrink: 0,
-  '& .MuiDrawer-paper': {
-    width: drawerWidth,
-    boxSizing: 'border-box',
-    backgroundColor: theme.palette.background.paper,
-    borderRight: 'none',
-    boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.05)',
-  },
-}));
-
-const DrawerHeader = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: theme.spacing(0, 1),
-  minHeight: '64px',
-  overflow: 'hidden',
-  position: 'relative',
-}));
-
-const LogoContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: theme.spacing(0, 2),
-  position: 'relative',
-  zIndex: 1,
-}));
-
-const ListItemStyled = styled(ListItem)<{ active?: number }>(({ theme, active }) => ({
-  margin: theme.spacing(0.5, 1),
-  borderRadius: '8px',
-  backgroundColor: active ? theme.palette.primary.main : 'transparent',
-  color: active ? '#fff' : theme.palette.text.primary,
-  transition: 'all 0.2s ease',
-  '&:hover': {
-    backgroundColor: active ? theme.palette.primary.dark : theme.palette.primary.light + '20',
-    transform: 'translateX(5px)',
-  },
-  '& .MuiListItemIcon-root': {
-    color: active ? '#fff' : theme.palette.primary.main,
-    transition: 'color 0.2s ease',
-  },
-  '& .MuiListItemText-primary': {
-    fontWeight: active ? 600 : 400,
-    transition: 'font-weight 0.2s ease',
-  },
-}));
-
-const DrawerDecoration = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  bottom: 0,
-  right: 0,
-  width: '120px',
-  height: '120px',
-  borderTopLeftRadius: '100%',
-  background: theme.palette.primary.main,
-  opacity: 0.1,
-  zIndex: 0,
-}));
-
-const DrawerFooter = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(2),
-  marginTop: 'auto',
-  backgroundColor: theme.palette.background.paper,
-  position: 'relative',
-  overflow: 'hidden',
-}));
-
 // Define las rutas de navegación según el rol del usuario
 const getNavigationItems = (role: UserRole) => {
-  // Elementos de navegación comunes para todos los roles
   const commonItems = [
     { text: 'Perfil', icon: <PersonIcon />, path: '/profile' },
   ];
 
-  // Elementos específicos para cada rol
   switch (role) {
     case UserRole.ADMIN:
       return [
@@ -147,7 +74,7 @@ const getNavigationItems = (role: UserRole) => {
 interface SidebarProps {
   open: boolean;
   isMobile: boolean;
-  user: any; // Usar el tipo User correcto cuando se implemente
+  user: any;
   handleDrawerClose: () => void;
   handleNavigation: (path: string) => void;
   handleLogout: () => Promise<void>;
@@ -164,26 +91,43 @@ const Sidebar: React.FC<SidebarProps> = ({
   const theme = useTheme();
   const location = useLocation();
 
-  // Obtén los elementos de navegación según el rol del usuario
   const navigationItems = user ? getNavigationItems(user.role) : [];
 
   return (
-    <StyledDrawer
+    <Drawer
       variant={isMobile ? "temporary" : "persistent"}
       open={open}
       onClose={handleDrawerClose}
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          backgroundColor: theme.palette.background.paper,
+          borderRight: 'none',
+          ...styleUtils.boxShadow(theme, 'low'),
+        },
+      }}
     >
-      <DrawerHeader>
-        <LogoContainer>
-          <Logo variant="horizontal" size="medium" />
-        </LogoContainer>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        p: 1, 
+        minHeight: '64px' 
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
+        <img src={Logo} alt="Foredu Logo" style={{ width:'172px' , height: '40px' }} />
+
+        </Box>
         <IconButton onClick={handleDrawerClose}>
           <ChevronLeftIcon />
         </IconButton>
-      </DrawerHeader>
+      </Box>
+      
       <Divider />
       
-      {/* Información del usuario */}
       <Box sx={{ 
         p: 2, 
         textAlign: 'center', 
@@ -199,19 +143,23 @@ const Sidebar: React.FC<SidebarProps> = ({
             mb: 1,
             bgcolor: theme.palette.primary.main,
             color: '#fff',
-            boxShadow: '0px 4px 12px rgba(233, 81, 29, 0.3)',
+            boxShadow: `0 4px 12px ${theme.palette.primary.main}30`,
             border: '4px solid white'
           }}
         >
           {user?.nombre?.charAt(0)}
         </Avatar>
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{user?.nombre}</Typography>
+        
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          {user?.nombre}
+        </Typography>
+        
         <Typography 
           variant="body2" 
           sx={{ 
             display: 'inline-block',
             color: theme.palette.text.secondary,
-            bgcolor: 'rgba(233, 81, 29, 0.1)',
+            bgcolor: `${theme.palette.primary.main}10`,
             px: 1.5,
             py: 0.5,
             borderRadius: '12px',
@@ -223,20 +171,40 @@ const Sidebar: React.FC<SidebarProps> = ({
            user?.role === UserRole.ESTUDIANTE ? 'Estudiante' : 'Tutor'}
         </Typography>
       </Box>
+      
       <Divider />
       
-      {/* Lista de navegación */}
       <List sx={{ p: 1, flexGrow: 1 }}>
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <ListItemStyled 
+            <ListItem 
               key={item.text}
-              onClick={() => handleNavigation(item.path)}
-              active={isActive ? 1 : 0}
               disablePadding
+              sx={{ 
+                margin: theme.spacing(0.5, 1),
+                borderRadius: '8px',
+                backgroundColor: isActive ? theme.palette.primary.main : 'transparent',
+                color: isActive ? '#fff' : theme.palette.text.primary,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  backgroundColor: isActive 
+                    ? theme.palette.primary.dark 
+                    : `${theme.palette.primary.light}20`,
+                  transform: 'translateX(5px)',
+                },
+              }}
             >
-              <ListItemButton selected={isActive}>
+              <ListItemButton 
+                selected={isActive}
+                onClick={() => handleNavigation(item.path)}
+                sx={{
+                  '& .MuiListItemIcon-root': {
+                    color: isActive ? '#fff' : theme.palette.primary.main,
+                    transition: 'color 0.2s ease',
+                  },
+                }}
+              >
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText 
                   primary={item.text}
@@ -245,21 +213,42 @@ const Sidebar: React.FC<SidebarProps> = ({
                   }}
                 />
               </ListItemButton>
-            </ListItemStyled>
+            </ListItem>
           );
         })}
       </List>
       
-      <DrawerFooter>
-        <ListItemStyled disablePadding>
+      <Box sx={{ 
+        p: 2, 
+        marginTop: 'auto', 
+        backgroundColor: theme.palette.background.paper, 
+        position: 'relative', 
+        overflow: 'hidden'
+      }}>
+        <ListItem 
+          disablePadding
+          sx={{ 
+            ...styleUtils.hoverEffect(theme),
+            borderRadius: '8px',
+          }}
+        >
           <ListItemButton onClick={handleLogout}>
             <ListItemIcon><LogoutIcon /></ListItemIcon>
             <ListItemText primary="Cerrar sesión" />
           </ListItemButton>
-        </ListItemStyled>
-        <DrawerDecoration />
-      </DrawerFooter>
-    </StyledDrawer>
+        </ListItem>
+        
+        <Box
+          sx={{
+            ...styleUtils.backgroundDecoration(theme, {
+              color: theme.palette.primary.main, 
+              size: 120, 
+              position: 'bottom-left'
+            })
+          }}
+        />
+      </Box>
+    </Drawer>
   );
 };
 

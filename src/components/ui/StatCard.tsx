@@ -1,8 +1,8 @@
-// src/components/ui/StatCard.tsx
 import React from 'react';
-import { Box, Typography, Paper, useTheme, alpha } from '@mui/material';
+import { Box, Typography, Paper, useTheme } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import { styleUtils } from '../../utils/styleUtils';
 
 interface StatCardProps {
   title: string;
@@ -24,36 +24,30 @@ const StatCard: React.FC<StatCardProps> = ({
   const theme = useTheme();
   
   const trendIsPositive = trend && trend > 0;
-  const trendColor = trendIsPositive ? theme.palette.success.main : theme.palette.error.main;
+  const trendColor = trendIsPositive 
+    ? theme.palette.success.main 
+    : theme.palette.error.main;
   
   return (
     <Paper
       elevation={0}
       sx={{
         p: 3,
-        borderRadius: 3,
         height: '100%',
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
-        },
+        ...styleUtils.borderRadius('medium'),
+        ...styleUtils.boxShadow(theme),
+        ...styleUtils.hoverEffect(theme),
       }}
     >
-      {/* Decoration */}
       <Box
         sx={{
-          position: 'absolute',
-          top: -20,
-          right: -20,
-          width: 120,
-          height: 120,
-          borderRadius: '50%',
-          backgroundColor: alpha(color, 0.08),
-          zIndex: 0,
+          ...styleUtils.backgroundDecoration(theme, { 
+            color, 
+            size: 120, 
+            position: 'top-right' 
+          })
         }}
       />
       
@@ -98,7 +92,7 @@ const StatCard: React.FC<StatCardProps> = ({
             sx={{
               p: 1.5,
               borderRadius: 2,
-              backgroundColor: alpha(color, 0.12),
+              backgroundColor: theme.palette.augmentColor({ color: { main: color } }).light,
               color: color,
               display: 'flex',
               alignItems: 'center',

@@ -21,7 +21,7 @@ import {
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import Logo from '../../components/design-system/Logo/Logo';
+import Logo from '../../assets/foredulogo.png';
 import { useAuthStore } from '../../store/authStore';
 import { UserRole } from '../../types/auth';
 
@@ -106,7 +106,7 @@ const Login: React.FC = () => {
         }}
       >
         <Box sx={{ mb: 4 }}>
-          <Logo variant="horizontal" size="large" />
+          <img src={Logo} alt="Foredu Logo" style={{ width: '100%', maxWidth: '200px' }} />
         </Box>
         
         <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>

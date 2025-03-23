@@ -13,7 +13,7 @@ import {
   styled
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import Logo from '../../components/design-system/Logo/Logo';
+import Logo from '../../assets/foredulogo.png';
 import SchoolIcon from '@mui/icons-material/School';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -112,7 +112,7 @@ const Landing: React.FC = () => {
           zIndex: 10
         }}
       >
-        <Logo variant="horizontal" size="medium" />
+        <img src={Logo} alt="Foredu Logo" style={{ height: '40px' }} />
         
         <Box>
           <Button 
@@ -340,7 +340,7 @@ const Landing: React.FC = () => {
         <Container maxWidth="lg">
           <Grid container spacing={4}>
             <Grid item xs={12} md={4}>
-              <Logo variant="horizontal" size="medium" color="white" />
+              <img src={Logo} alt="Foredu Logo" style={{ height: '40px' }} />
               <Typography variant="body2" sx={{ mt: 2, opacity: 0.8 }}>
                 Transformando la educación con tecnología e innovación.
               </Typography>
