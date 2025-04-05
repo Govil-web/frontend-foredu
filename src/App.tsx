@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import foreduTheme from './theme/theme';
+import foreduTheme from './theme';
 import AppRoutes from './routes/AppRoutes';
 import { useAuthStore } from './store/authStore';
 

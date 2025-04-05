@@ -2,11 +2,14 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole } from '../types/auth';
-import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../hooks/useAuth';
 
-// Layouts
-import MainLayout from '../components/layout/MainLayout/MainLayout';
+// Importar las funciones que devuelven elementos de ruta
+import { getAdminRoutes } from './adminRoutes';
+import { getTeacherRoutes } from './teacherRoutes';
+import { getStudentRoutes } from './studentRoutes';
+import { getTutorRoutes } from './tutorRoutes';
+import { getSharedRoutes } from './sharedRoutes';
 
 // Páginas públicas
 import Landing from '../pages/Landing/Landing';
@@ -15,28 +18,10 @@ import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import Unauthorized from '../pages/auth/Unauthorized';
 
-// Páginas de administrador
-import AdminDashboard from '../pages/admin/Dashboard';
-import ManageUsers from '../pages/admin/ManageUsers';
-import AdminReports from '../pages/admin/Reports';
-import AdminSettings from '../pages/admin/Settings';
-
-// Páginas de profesor
-import TeacherDashboard from '../pages/teacher/Dashboard';
-import GradeManagement from '../pages/teacher/GradeManagement';
-import AttendanceManagement from '../pages/teacher/AttendanceManagement';
-
-// Páginas de estudiante
-import StudentDashboard from '../pages/student/Dashboard';
-import StudentGrades from '../pages/student/Grades';
-
-// Páginas de tutor
-import TutorDashboard from '../pages/tutor/Dashboard';
-import StudentProgress from '../pages/tutor/StudentProgress';
-
-// Páginas compartidas
-import Profile from '../pages/shared/Profile';
-
+/**
+ * Componente principal de rutas que organiza todas las rutas de la aplicación
+ * y gestiona la redirección basada en la autenticación y rol del usuario
+ */
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -74,69 +59,14 @@ const AppRoutes: React.FC = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
-      {/* Rutas de administrador */}
-      <Route path="/admin/*" element={
-        <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-          <MainLayout>
-            <Routes>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<ManageUsers />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="settings" element={<AdminSettings />} />
-              <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-            </Routes>
-          </MainLayout>
-        </ProtectedRoute>
-      } />
-
-      {/* Rutas de profesor */}
-      <Route path="/teacher/*" element={
-        <ProtectedRoute allowedRoles={[UserRole.PROFESOR]}>
-          <MainLayout>
-            <Routes>
-              <Route path="dashboard" element={<TeacherDashboard />} />
-              <Route path="grades" element={<GradeManagement />} />
-              <Route path="attendance" element={<AttendanceManagement />} />
-              <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
-            </Routes>
-          </MainLayout>
-        </ProtectedRoute>
-      } />
-
-      {/* Rutas de estudiante */}
-      <Route path="/student/*" element={
-        <ProtectedRoute allowedRoles={[UserRole.ESTUDIANTE]}>
-          <MainLayout>
-            <Routes>
-              <Route path="dashboard" element={<StudentDashboard />} />
-              <Route path="grades" element={<StudentGrades />} />
-              <Route path="*" element={<Navigate to="/student/dashboard" replace />} />
-            </Routes>
-          </MainLayout>
-        </ProtectedRoute>
-      } />
-
-      {/* Rutas de tutor */}
-      <Route path="/tutor/*" element={
-        <ProtectedRoute allowedRoles={[UserRole.TUTOR]}>
-          <MainLayout>
-            <Routes>
-              <Route path="dashboard" element={<TutorDashboard />} />
-              <Route path="progress" element={<StudentProgress />} />
-              <Route path="*" element={<Navigate to="/tutor/dashboard" replace />} />
-            </Routes>
-          </MainLayout>
-        </ProtectedRoute>
-      } />
-
+      {/* Rutas específicas por rol */}
+      {getAdminRoutes()}
+      {getTeacherRoutes()}
+      {getStudentRoutes()}
+      {getTutorRoutes()}
+      
       {/* Rutas compartidas */}
-      <Route path="/profile" element={
-        <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.PROFESOR, UserRole.ESTUDIANTE, UserRole.TUTOR]}>
-          <MainLayout>
-            <Profile />
-          </MainLayout>
-        </ProtectedRoute>
-      } />
+      {getSharedRoutes()}
 
       {/* Ruta 404 */}
       <Route path="*" element={<Navigate to="/" />} />
