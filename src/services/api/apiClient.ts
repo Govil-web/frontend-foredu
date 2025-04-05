@@ -1,21 +1,12 @@
-// src/services/api/apiClient.ts
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { tokenService } from '../auth/tokenService';
 
-export interface HttpClient {
-  get<T>(url: string, config?: any): Promise<T>;
-  post<T>(url: string, data?: any, config?: any): Promise<T>;
-  put<T>(url: string, data?: any, config?: any): Promise<T>;
-  patch<T>(url: string, data?: any, config?: any): Promise<T>;
-  delete<T>(url: string, config?: any): Promise<T>;
-}
-
-export class AxiosHttpClient implements HttpClient {
+export class AxiosHttpClient {
   private instance: AxiosInstance;
 
-  constructor(baseURL: string) {
+  constructor() {
     this.instance = axios.create({
-      baseURL,
+      baseURL: import.meta.env.VITE_API_URL,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -80,3 +71,5 @@ export class AxiosHttpClient implements HttpClient {
     return response.data;
   }
 }
+
+export const apiClient = new AxiosHttpClient();

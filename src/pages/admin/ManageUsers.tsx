@@ -1,4 +1,3 @@
-// src/pages/admin/ManageUsers.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -59,15 +58,13 @@ const ManageUsers: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await userService.getAll();
-      if (response.estado) {
-        setUsers(response.dataIterable || []);
-      } else {
-        setError(response.message ?? null);
-      }
+      const fetchedUsers = await userService.getAll();
+      // Ensure fetchedUsers is an array, even if it's empty
+      setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
     } catch (err) {
-      setError('Error al conectar con el servidor');
+      setError('Error al obtener usuarios');
       console.error(err);
+      setUsers([]); // Set to empty array in case of error
     } finally {
       setLoading(false);
     }
@@ -79,7 +76,7 @@ const ManageUsers: React.FC = () => {
   }, []);
 
   // Filtrar usuarios según el término de búsqueda
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = (users || []).filter(user => 
     user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -123,25 +120,17 @@ const ManageUsers: React.FC = () => {
     if (selectedUserId) {
       setLoading(true);
       try {
-        const response = await userService.delete(selectedUserId);
-        if (response.estado) {
-          fetchUsers();
-          setSnackbar({
-            open: true,
-            message: 'Usuario eliminado correctamente',
-            severity: 'success'
-          });
-        } else {
-          setSnackbar({
-            open: true,
-            message: response.message || 'Error al eliminar usuario',
-            severity: 'error'
-          });
-        }
+        await userService.delete(selectedUserId);
+        fetchUsers();
+        setSnackbar({
+          open: true,
+          message: 'Usuario eliminado correctamente',
+          severity: 'success'
+        });
       } catch (err) {
         setSnackbar({
           open: true,
-          message: 'Error al conectar con el servidor',
+          message: 'Error al eliminar usuario',
           severity: 'error'
         });
       } finally {
@@ -165,14 +154,14 @@ const ManageUsers: React.FC = () => {
   const handleSaveUser = async (userData: UserRequestDTO) => {
     setLoading(true);
     try {
-      let response;
+      let updatedUser;
       if (dialogMode === 'add') {
-        response = await userService.create(userData);
+        updatedUser = await userService.create(userData);
       } else {
-        response = await userService.update(userData);
+        updatedUser = await userService.update(userData);
       }
 
-      if (response.estado) {
+      if (updatedUser) {
         fetchUsers();
         setOpenDialog(false);
         setSnackbar({
@@ -183,7 +172,7 @@ const ManageUsers: React.FC = () => {
       } else {
         setSnackbar({
           open: true,
-          message: response.message || 'Error al guardar usuario',
+          message: 'Error al guardar usuario',
           severity: 'error'
         });
       }
