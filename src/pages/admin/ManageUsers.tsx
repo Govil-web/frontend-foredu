@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -23,7 +23,9 @@ import {
   DialogActions,
   CircularProgress,
   Alert,
-  Snackbar
+  Snackbar,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -33,17 +35,23 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { userService } from '../../services/api/userService';
+import { estudianteService } from '../../services/api/estudianteService';
 import { UserResponseDTO, UserRequestDTO } from '../../types/auth';
 import UserForm from '../../components/admin/UserForm';
 import { useAuth } from '../../hooks/useAuth';
 
+// Tipo unificado para manejar ambos tipos de usuarios en el estado y la tabla
+// Incluye email como opcional ya que los estudiantes no lo tienen
+type CombinedUserResponseDTO = Omit<UserResponseDTO, 'email'> & { email?: string };
+
 const ManageUsers: React.FC = () => {
   const { user } = useAuth();
-  const [users, setUsers] = useState<UserResponseDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -51,35 +59,96 @@ const ManageUsers: React.FC = () => {
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  const [selectedUser, setSelectedUser] = useState<UserResponseDTO | null>(null);
+  const [selectedUser, setSelectedUser] = useState<CombinedUserResponseDTO | null>(null);
+  const [allCombinedUsers, setAllCombinedUsers] = useState<CombinedUserResponseDTO[]>([]);
 
   // Función para cargar usuarios
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const fetchedUsers = await userService.getAll();
-      // Ensure fetchedUsers is an array, even if it's empty
-      setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
+      let combinedUsers: CombinedUserResponseDTO[] = [];
+
+      if (selectedTab === 'ROLE_ESTUDIANTE') {
+        const { estudiantes, totalElements: estTotalElements } = 
+          await estudianteService.getAll(0, 10000); // Traer todos los estudiantes para paginar en frontend
+        setTotalElements(estTotalElements);
+        combinedUsers = estudiantes.map(est => ({
+          id: est.id,
+          nombre: est.nombre,
+          apellido: est.apellido,
+          dni: est.dni || '',
+          activo: est.activo,
+          rol: 'ROLE_ESTUDIANTE',
+          email: undefined,
+          tipoDocumento: '',
+          telefono: '',
+          institucionId: 0,
+          institucion: ''
+        }));
+        setAllCombinedUsers(combinedUsers);
+      } else if (selectedTab === 'all') {
+        const [fetchedUsers, estudiantesResult] = await Promise.all([
+          userService.getAll(),
+          estudianteService.getAll(0, 10000)
+        ]);
+        const otherUsers = Array.isArray(fetchedUsers) ? fetchedUsers : [];
+        const estudiantes = estudiantesResult.estudiantes;
+        const mappedEstudiantes = estudiantes.map(est => ({
+          id: est.id,
+          nombre: est.nombre,
+          apellido: est.apellido,
+          dni: est.dni || '',
+          activo: est.activo,
+          rol: 'ROLE_ESTUDIANTE',
+          email: undefined,
+          tipoDocumento: '',
+          telefono: '',
+          institucionId: 0,
+          institucion: ''
+        }));
+        combinedUsers = [...otherUsers, ...mappedEstudiantes];
+        setAllCombinedUsers(combinedUsers);
+        setTotalElements(combinedUsers.length);
+      } else {
+        const fetchedUsers = await userService.getAll();
+        combinedUsers = Array.isArray(fetchedUsers) ? fetchedUsers : [];
+        setTotalElements(combinedUsers.length);
+        setAllCombinedUsers(combinedUsers);
+      }
     } catch (err) {
-      setError('Error al obtener usuarios');
-      console.error(err);
-      setUsers([]); // Set to empty array in case of error
+      const tabName = selectedTab === 'all' ? 'todos' 
+                      : selectedTab === 'ROLE_ESTUDIANTE' ? 'estudiantes' 
+                      : 'usuarios';
+      console.error(`Error detallado al obtener ${tabName}:`, err);
+      setError(`Error al obtener la lista de ${tabName}`);
+      setAllCombinedUsers([]);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTab]);
 
-  // Cargar usuarios al montar el componente
+  // Filtrar usuarios
+  const filteredUsers = (allCombinedUsers || [])
+    .filter(user => {
+      if (selectedTab !== 'all' && selectedTab !== 'ROLE_ESTUDIANTE') {
+        return user.rol === selectedTab;
+      }
+      return true;
+    })
+    .filter(user =>
+      user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+  // Actualizar el total de elementos sobre el array filtrado
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    setTotalElements(filteredUsers.length);
+  }, [filteredUsers]);
 
-  // Filtrar usuarios según el término de búsqueda
-  const filteredUsers = (users || []).filter(user => 
-    user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Obtener los usuarios a mostrar en la página actual
+  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -100,9 +169,14 @@ const ManageUsers: React.FC = () => {
     setSelectedUserId(null);
   };
 
+  const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
+    setSelectedTab(newValue);
+    setPage(0);
+  };
+
   const handleEdit = () => {
     // Buscar el usuario seleccionado
-    const userToEdit = users.find(user => user.id === selectedUserId);
+    const userToEdit = paginatedUsers.find(user => user.id === selectedUserId);
     if (userToEdit) {
       setSelectedUser(userToEdit);
       setDialogMode('edit');
@@ -128,6 +202,7 @@ const ManageUsers: React.FC = () => {
           severity: 'success'
         });
       } catch (err) {
+        console.error('Error al eliminar usuario:', err);
         setSnackbar({
           open: true,
           message: 'Error al eliminar usuario',
@@ -177,6 +252,7 @@ const ManageUsers: React.FC = () => {
         });
       }
     } catch (err) {
+      console.error('Error al conectar con el servidor:', err);
       setSnackbar({
         open: true,
         message: 'Error al conectar con el servidor',
@@ -201,6 +277,13 @@ const ManageUsers: React.FC = () => {
       </Box>
     );
   }
+
+  // Cargar usuarios al montar el componente y cuando cambie la pestaña
+  useEffect(() => {
+    fetchUsers();
+    setPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchUsers, selectedTab]);
 
   return (
     <Box>
@@ -235,6 +318,24 @@ const ManageUsers: React.FC = () => {
         </Box>
       </Paper>
 
+      {/* Barra de Pestañas */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs
+          value={selectedTab}
+          onChange={handleTabChange}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="fullWidth"
+          aria-label="filtrar usuarios por rol"
+        >
+          <Tab label="Todos" value="all" />
+          <Tab label="Alumnos" value="ROLE_ESTUDIANTE" />
+          <Tab label="Profesores" value="ROLE_PROFESOR" />
+          <Tab label="Tutores" value="ROLE_TUTOR" />
+          <Tab label="Administradores" value="ROLE_ADMINISTRADOR" />
+        </Tabs>
+      </Paper>
+
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
           <CircularProgress />
@@ -247,79 +348,84 @@ const ManageUsers: React.FC = () => {
         </Alert>
       )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Rol</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell align="right">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredUsers
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell component="th" scope="row">
-                    {`${user.nombre} ${user.apellido || ''}`}
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={
-                        user.rol === 'ROLE_ADMINISTRADOR' ? 'Administrador' : 
-                        user.rol === 'ROLE_PROFESOR' ? 'Profesor' :
-                        user.rol === 'ROLE_TUTOR' ? 'Tutor' : 'Estudiante'
-                      }
-                      color={
-                        user.rol === 'ROLE_ADMINISTRADOR' ? 'error' :
-                        user.rol === 'ROLE_PROFESOR' ? 'primary' :
-                        user.rol === 'ROLE_TUTOR' ? 'success' : 'info'
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.activo ? 'Activo' : 'Inactivo'}
-                      color={user.activo ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleOpenMenu(e, user.id)}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
+      {/* Mostrar la tabla solo cuando no está cargando */}
+      {!loading && (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Nombre</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Rol</TableCell>
+                <TableCell>Estado</TableCell>
+                <TableCell align="right">Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers
+                  .map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell component="th" scope="row">
+                        {`${user.nombre} ${user.apellido || ''}`}
+                      </TableCell>
+                      <TableCell>{user.email || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={
+                            user.rol === 'ROLE_ADMINISTRADOR' ? 'Administrador' : 
+                            user.rol === 'ROLE_PROFESOR' ? 'Profesor' :
+                            user.rol === 'ROLE_TUTOR' ? 'Tutor' : 
+                            user.rol === 'ROLE_ESTUDIANTE' ? 'Estudiante' : 'Desconocido'
+                          }
+                          color={
+                            user.rol === 'ROLE_ADMINISTRADOR' ? 'error' :
+                            user.rol === 'ROLE_PROFESOR' ? 'primary' :
+                            user.rol === 'ROLE_TUTOR' ? 'success' : 
+                            user.rol === 'ROLE_ESTUDIANTE' ? 'info' : 'default'
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={user.activo ? 'Activo' : 'Inactivo'}
+                          color={user.activo ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleOpenMenu(e, user.id)}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    No se encontraron usuarios {selectedTab !== 'all' ? `con el rol seleccionado` : ''} {searchTerm ? 'que coincidan con la búsqueda' : ''}.
                   </TableCell>
                 </TableRow>
-              ))}
-            {filteredUsers.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  No se encontraron usuarios
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredUsers.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Filas por página:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-        />
-      </TableContainer>
+              )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={totalElements}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Filas por página:"
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+          />
+        </TableContainer>
+      )}
 
       {/* Menú de acciones */}
       <Menu
@@ -343,7 +449,7 @@ const ManageUsers: React.FC = () => {
         onClose={handleCloseDialog} 
         onSave={handleSaveUser}
         isEdit={dialogMode === 'edit'}
-        user={selectedUser}
+        user={selectedUser ? { ...selectedUser, email: selectedUser.email || '' } : null}
       />
 
       {/* Diálogo de confirmación para eliminar */}

@@ -8,8 +8,6 @@ interface LogoProps {
   size?: 'small' | 'medium' | 'large';
   color?: 'color' | 'white' | 'dark';
 }
-
-// Componente para los puntos sobre la "U"
 const LogoDots = styled('span')(({ theme }) => ({
   position: 'relative',
   '&::after': {
@@ -41,14 +39,12 @@ const Logo: React.FC<LogoProps> = ({
 }) => {
   const theme = useTheme();
   
-  // Colores según la variante
-  const primaryColor = color === 'color' ? theme.palette.primary.main : 
+  const primaryColor = color === 'color' ? theme.palette.primary.main :
                       color === 'white' ? '#FFFFFF' : theme.palette.secondary.main;
   const secondaryColor = color === 'color' ? theme.palette.secondary.main : 
                         color === 'white' ? '#FFFFFF' : theme.palette.secondary.main;
   const textColor = color === 'white' ? '#FFFFFF' : theme.palette.secondary.main;
   
-  // Definir dimensiones según el tamaño
   let logoHeight, fontSize, bookWidth;
   switch (size) {
     case 'small':

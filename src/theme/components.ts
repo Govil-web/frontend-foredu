@@ -1,25 +1,21 @@
 // src/theme/components.ts
 import { Components, Theme } from '@mui/material/styles';
 
-/**
- * Configuración de componentes para el tema de Foredu
- * Define estilos específicos para cada componente de Material UI
- */
-export const components: Components<Omit<Theme, 'components'>> = {
+const componentsConfig = (theme: Theme): Components<Omit<Theme, 'components'>> => ({
   MuiButton: {
     styleOverrides: {
       root: {
-        borderRadius: '8px',
-        padding: '8px 16px',
+        borderRadius: theme.shape.borderRadius,
+        padding: theme.spacing(1, 2),
         boxShadow: 'none',
       },
       contained: {
         '&:hover': {
-          boxShadow: '0px 4px 10px rgba(233, 81, 29, 0.2)',
+          boxShadow: `0px 4px 10px ${theme.palette.primary.main}20`,
         },
       },
       outlinedPrimary: {
-        borderColor: '#E9511D',
+        borderColor: theme.palette.primary.main,
       },
     },
     defaultProps: {
@@ -29,9 +25,9 @@ export const components: Components<Omit<Theme, 'components'>> = {
   MuiTableHead: {
     styleOverrides: {
       root: {
-        backgroundColor: '#262853',
+        backgroundColor: theme.palette.secondary.main,
         '& .MuiTableCell-head': {
-          color: '#FFFFFF',
+          color: theme.palette.common.white,
           fontWeight: 500,
         },
       },
@@ -40,22 +36,22 @@ export const components: Components<Omit<Theme, 'components'>> = {
   MuiTableCell: {
     styleOverrides: {
       root: {
-        padding: '12px 16px',
+        padding: theme.spacing(1.5, 2),
       },
     },
   },
   MuiCard: {
     styleOverrides: {
       root: {
-        borderRadius: '12px',
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+        borderRadius: theme.shape.borderRadius * 1.5,
+        boxShadow: theme.shadows[2],
       },
     },
   },
   MuiCardHeader: {
     styleOverrides: {
       root: {
-        padding: '16px 24px',
+        padding: theme.spacing(2, 3),
       },
       title: {
         fontSize: '1.125rem',
@@ -66,9 +62,9 @@ export const components: Components<Omit<Theme, 'components'>> = {
   MuiCardContent: {
     styleOverrides: {
       root: {
-        padding: '24px',
+        padding: theme.spacing(3),
         '&:last-child': {
-          paddingBottom: '24px',
+          paddingBottom: theme.spacing(3),
         },
       },
     },
@@ -87,7 +83,7 @@ export const components: Components<Omit<Theme, 'components'>> = {
         textTransform: 'none',
         minWidth: 'auto',
         '&.Mui-selected': {
-          color: '#E9511D',
+          color: theme.palette.primary.main,
         },
       },
     },
@@ -95,7 +91,7 @@ export const components: Components<Omit<Theme, 'components'>> = {
   MuiTabs: {
     styleOverrides: {
       indicator: {
-        backgroundColor: '#E9511D',
+        backgroundColor: theme.palette.primary.main,
       },
     },
   },
@@ -105,7 +101,7 @@ export const components: Components<Omit<Theme, 'components'>> = {
         backgroundImage: 'none',
       },
       elevation1: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+        boxShadow: theme.shadows[2],
       },
     },
   },
@@ -115,7 +111,7 @@ export const components: Components<Omit<Theme, 'components'>> = {
         fontWeight: 500,
       },
       colorPrimary: {
-        backgroundColor: '#E9511D',
+        backgroundColor: theme.palette.primary.main,
       },
     },
   },
@@ -123,7 +119,7 @@ export const components: Components<Omit<Theme, 'components'>> = {
     styleOverrides: {
       root: {
         '&:hover': {
-          backgroundColor: 'rgba(233, 81, 29, 0.08)',
+          backgroundColor: theme.palette.action.hover,
         },
       },
     },
@@ -131,21 +127,21 @@ export const components: Components<Omit<Theme, 'components'>> = {
   MuiDrawer: {
     styleOverrides: {
       paper: {
-        backgroundColor: '#F9FAFB',
-        borderRight: '1px solid #E0E0E0',
+        backgroundColor: theme.palette.background.default,
+        borderRight: `1px solid ${theme.palette.divider}`,
       },
     },
   },
   MuiListItemButton: {
     styleOverrides: {
       root: {
-        borderRadius: '8px',
-        marginBottom: '4px',
+        borderRadius: theme.shape.borderRadius,
+        marginBottom: theme.spacing(0.5),
         '&.Mui-selected': {
-          backgroundColor: 'rgba(233, 81, 29, 0.08)',
-          color: '#E9511D',
+          backgroundColor: theme.palette.action.selected,
+          color: theme.palette.primary.main,
           '&:hover': {
-            backgroundColor: 'rgba(233, 81, 29, 0.12)',
+            backgroundColor: theme.palette.action.hover,
           },
           '&::before': {
             content: '""',
@@ -154,8 +150,8 @@ export const components: Components<Omit<Theme, 'components'>> = {
             top: '25%',
             bottom: '25%',
             width: '3px',
-            backgroundColor: '#E9511D',
-            borderRadius: '0 4px 4px 0',
+            backgroundColor: theme.palette.primary.main,
+            borderRadius: theme.shape.borderRadius,
           },
         },
       },
@@ -165,7 +161,7 @@ export const components: Components<Omit<Theme, 'components'>> = {
     styleOverrides: {
       root: {
         '& .MuiOutlinedInput-root': {
-          borderRadius: '8px',
+          borderRadius: theme.shape.borderRadius,
         }
       }
     }
@@ -173,21 +169,21 @@ export const components: Components<Omit<Theme, 'components'>> = {
   MuiInputLabel: {
     styleOverrides: {
       root: {
-        fontSize: '0.875rem',
+        fontSize: theme.typography.pxToRem(14),
       }
     }
   },
   MuiMenuItem: {
     styleOverrides: {
       root: {
-        fontSize: '0.875rem',
+        fontSize: theme.typography.pxToRem(14),
       }
     }
   },
   MuiDivider: {
     styleOverrides: {
       root: {
-        borderColor: '#E0E0E0',
+        borderColor: theme.palette.divider,
       }
     }
   },
@@ -207,4 +203,15 @@ export const components: Components<Omit<Theme, 'components'>> = {
       }
     }
   },
-};
+  MuiBadge: {
+    styleOverrides: {
+      badge: {
+        right: theme.spacing(0.375),
+        bottom: theme.spacing(0.375),
+        border: `1px solid ${theme.palette.background.paper}`,
+      }
+    }
+  }
+});
+
+export const components = componentsConfig;

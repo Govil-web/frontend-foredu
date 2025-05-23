@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../../assets/foredulogo.png';
+import educationHero from '../../assets/education-hero.jpg';
 import SchoolIcon from '@mui/icons-material/School';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -116,14 +117,6 @@ const Landing: React.FC = () => {
         
         <Box>
           <Button 
-            variant="outlined" 
-            color="primary" 
-            sx={{ mr: 2 }}
-            onClick={() => navigate('/register')}
-          >
-            Registrarse
-          </Button>
-          <Button 
             variant="contained" 
             color="primary"
             onClick={handleLoginClick}
@@ -204,17 +197,17 @@ const Landing: React.FC = () => {
               </Button>
             </Grid>
             <Grid item xs={12} md={6} sx={{ textAlign: 'center' }}>
-              <Box 
-                component="img"
-                src="src\assets\education-hero.jpg" 
-                alt="Plataforma educativa"
-                sx={{ 
-                  maxWidth: '100%', 
-                  height: 'auto',
-                  maxHeight: 400,
-                  filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.15))'
-                }}
-              />
+                <Box
+                    component="img"
+                    src={educationHero}
+                    alt="Plataforma educativa"
+                    sx={{
+                        maxWidth: '100%',
+                        height: 'auto',
+                        maxHeight: 400,
+                        filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.15))'
+                    }}
+                />
             </Grid>
           </Grid>
         </Container>
@@ -367,17 +360,6 @@ const Landing: React.FC = () => {
                 onClick={() => navigate('/login')}
               >
                 Iniciar sesión
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  opacity: 0.8,
-                  cursor: 'pointer',
-                  '&:hover': { opacity: 1 } 
-                }}
-                onClick={() => navigate('/register')}
-              >
-                Registrarse
               </Typography>
             </Grid>
           </Grid>

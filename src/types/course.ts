@@ -1,8 +1,4 @@
 // src/types/course.ts
-import { UserResponseDTO } from './auth';
-
-
-
 export interface Course {
   id: number;
   aula: string;
@@ -11,7 +7,7 @@ export interface Course {
   materia: string;
   profesor?: number;
   profesorNombre: string;
-  contador?: number; // Aunque no viene en la respuesta, lo mantenemos para compatibilidad
+  contador?: number;
 }
 
 export interface CourseResponseDTO {

@@ -1,4 +1,3 @@
-// src/pages/admin/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   Box, 
@@ -34,11 +33,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../services/courses/courseService';
-import { userService } from '../../services/api/userService';
-import { Course } from '../../types/course';
-import { UserResponseDTO, UserRole } from '../../types/auth';
+import { Course } from '../../typeh';
 
-// Mapeo de colores según el grado para los iconos
 const courseIcons: Record<string, { icon: React.ReactNode, color: string, bgColor: string }> = {
   "PRIMERO": { icon: <SchoolIcon sx={{ fontSize: 40 }} />, color: "#F8D449", bgColor: "#FFF8E1" },
   "SEGUNDO": { icon: <SchoolIcon sx={{ fontSize: 40 }} />, color: "#4E97F3", bgColor: "#E3F2FD" },

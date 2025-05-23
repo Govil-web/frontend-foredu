@@ -27,6 +27,7 @@ export const palette: PaletteOptions = {
   background: {
     default: '#F9FAFB', // Fondo principal
     paper: '#FFFFFF',
+    main: '#EAEDF5CC'
   },
   text: {
     primary: '#1E1E1E', 
