@@ -50,21 +50,30 @@ export const estudianteService = {
     }
   },
 
-  getAll: async (page: number = 0, size: number = 10): Promise<{
+  getAll: async (pageNumber: number = 0, pageSize: number = 10): Promise<{
     estudiantes: Estudiante[];
     totalPages: number;
     totalElements: number;
+    // Opcional: puedes devolver 'estado' y 'message' si la UI los necesita
+    // estado?: boolean;
+    // message?: string;
   }> => {
     try {
-      const response = await apiClient.get<ApiEstudiantePageResponse>(`${BASE_URL}`, {
+      // La llamada a la API. apiClient.get<T> debería devolver un objeto donde response.data es de tipo T
+      const response = await apiClient.get<ApiEstudiantePageResponse>(`${BASE_URL}`, { // El endpoint puede ser solo BASE_URL o BASE_URL + '/all', etc.
         params: {
-          pagina: page,
-          tamano: size
+          pagina: pageNumber, // Verifica que 'pagina' y 'tamano' sean los nombres de parámetros correctos
+          tamano: pageSize
         }
       });
 
-      if (!response || !Array.isArray(response.content)) {
-        console.warn('Respuesta inesperada de la API de paginación de estudiantes:', response);
+      // Nueva comprobación basada en la estructura correcta
+      if (
+        !response.data ||              // Falta el cuerpo de la respuesta
+        !Array.isArray(response.data.content) || // 'content' no es un array
+        !response.data.page       // Falta el objeto 'page'
+      ) {
+        console.warn('Respuesta inesperada o estructura incorrecta de la API de paginación de estudiantes:', response.data);
         return {
           estudiantes: [],
           totalPages: 0,
@@ -72,10 +81,15 @@ export const estudianteService = {
         };
       }
 
-      const { content, totalPages, totalElements /*, number, size */ } = response;
+      // Extraer datos de la estructura anidada correcta
+      const { content, page } = response.data;
+      const { totalPages, totalElements } = page;
+
       const mappedEstudiantes: Estudiante[] = content.map(mapApiEstudianteToModel);
 
       return {
+        // estado: response.data.estado, // Opcional: si quieres pasar el estado de la API
+        // message: response.data.message, // Opcional: si quieres pasar el mensaje de la API
         estudiantes: mappedEstudiantes,
         totalPages: totalPages,
         totalElements: totalElements
@@ -85,7 +99,9 @@ export const estudianteService = {
       return {
         estudiantes: [],
         totalPages: 0,
-        totalElements: 0
+        totalElements: 0,
+        // estado: false, // Ejemplo de cómo podrías manejar el estado en caso de error
+        // message: 'Error al cargar los estudiantes paginados.' // Ejemplo de mensaje de error
       };
     }
   }

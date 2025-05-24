@@ -49,11 +49,19 @@ export interface ApiEstudiantePorGradoResponse {
   message: string;                        // Mensaje descriptivo de la API
   data: ApiEstudianteData[];              // Array de estudiantes (principalmente usado)
 }
+export interface PaginatedEstudianteContent {
+  content: ApiEstudianteData[]; // Array de estudiantes (ApiEstudianteData ya la tienes definida)
+  page: PageDetails;
+}
 export interface ApiEstudiantePageResponse {
-    content: ApiEstudianteData[];
-    totalPages: number;
-    totalElements: number;
-    number: number; // Número de página actual (usualmente basado en 0)
-    size: number;   // Tamaño de la página
-    // Podría haber otras propiedades como: first, last, sort, numberOfElements, empty
+   estado: boolean;
+  message: string;
+  data: PaginatedEstudianteContent; 
+}
+
+export interface PageDetails {
+  size: number;
+  number: number; // Número de página actual
+  totalElements: number;
+  totalPages: number;
 }
