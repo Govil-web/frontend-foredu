@@ -1,12 +1,14 @@
 // src/routes/adminRoutes.tsx
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
-import { UserRole } from '../types/auth';
+import { UserRole } from '../types';
 import ProtectedRoute from './ProtectedRoute';
 import MainLayout from '../components/layout/MainLayout/MainLayout';
+import GradeDetails from '../pages/shared/GradeDetails.tsx';
 
 // Páginas de administrador
-import AdminDashboard from '../pages/admin/Dashboard';
+// import AdminDashboard from '../pages/admin/Dashboard';
+import Grados from '../pages/admin/Grados';
 import ManageUsers from '../pages/admin/ManageUsers';
 import AdminReports from '../pages/admin/Reports';
 import AdminSettings from '../pages/admin/Settings';
@@ -30,7 +32,9 @@ export const getAdminRoutes = () => (
     <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
       <MainLayout>
         <Routes>
-          <Route path="dashboard" element={<AdminDashboard />} />
+          {/* <Route path="dashboard" element={<AdminDashboard />} /> */}
+          <Route path='grades' element={<Grados /> }/>
+          <Route path="grados/:id" element={<GradeDetails />} />
           <Route path="users" element={<ManageUsers />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="settings" element={<AdminSettings />} />

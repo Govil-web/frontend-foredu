@@ -25,12 +25,12 @@ export const palette: PaletteOptions = {
     contrastText: '#1E1E1E',
   },
   background: {
-    default: '#F9FAFB', // Fondo principal
+    default: '#EAEDF5CC', // Fondo principal
     paper: '#FFFFFF',
-    main: '#EAEDF5CC'
+
   },
   text: {
-    primary: '#1E1E1E', 
+    primary: '#717171', 
     secondary: '#637381',
   },
   error: {

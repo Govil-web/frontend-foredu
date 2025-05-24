@@ -1,46 +1,70 @@
 import { apiClient } from './apiClient';
-
-// Interfaz para el contenido de la respuesta paginada
-interface EstudianteContent {
-  id: number;
-  nombre: string;
-  apellido: string;
-  dni: string;
-  genero: string;
-  activo: boolean;
-  gradoId: number;
-  gradoNombre: string;
-}
-
-// Definimos una estructura similar a UserResponseDTO para consistencia
-export interface EstudianteResponseDTO {
-  id: number;
-  nombre: string;
-  apellido: string;
-  dni: string;
-  activo: boolean;
-  gradoId: number;
-  gradoNombre: string;
-}
+import {
+  ApiEstudianteData,
+  ApiEstudiantePageResponse,
+  ApiEstudiantePorGradoResponse
+} from '../../types';
+import { Estudiante } from '../../types';
 
 const BASE_URL = '/estudiante';
 
+
+const mapApiEstudianteToModel = (apiEst: ApiEstudianteData): Estudiante => ({
+  id: apiEst.id,
+  nombre: apiEst.nombre,
+  apellido: apiEst.apellido,
+  dni: apiEst.dni,
+  activo: apiEst.activo,
+  genero: apiEst.genero,
+  gradoId: apiEst.gradoId,
+  gradoNombre: apiEst.gradoNombre,
+});
+
 export const estudianteService = {
+  obtenerPorGrado: async (gradoId: number): Promise<{
+    estado: boolean;
+    data: Estudiante[];
+    message: string;
+  }> => {
+    try {
+
+      const response = await apiClient.get<ApiEstudiantePorGradoResponse>(`${BASE_URL}/grado/${gradoId}`, {
+        params: { gradoId }
+      });
+
+
+      const apiEstudiantes = response.data || [];
+      const mappedData: Estudiante[] = apiEstudiantes.map(mapApiEstudianteToModel);
+      return {
+        estado: true,
+        data: mappedData,
+        message: 'Estudiantes obtenidos con éxito.'
+      };
+    } catch (error) {
+      console.error('Error obteniendo estudiantes por grado:', error);
+      return {
+        estado: false,
+        data: [],
+        message: error instanceof Error ? error.message : 'Error obteniendo estudiantes'
+      };
+    }
+  },
+
   getAll: async (page: number = 0, size: number = 10): Promise<{
-    estudiantes: EstudianteResponseDTO[];
+    estudiantes: Estudiante[];
     totalPages: number;
     totalElements: number;
   }> => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await apiClient.get<any>(`${BASE_URL}`, {
+      const response = await apiClient.get<ApiEstudiantePageResponse>(`${BASE_URL}`, {
         params: {
           pagina: page,
           tamano: size
         }
       });
 
-      if (!response.data || !Array.isArray(response.data.content)) {
+      if (!response || !Array.isArray(response.content)) {
+        console.warn('Respuesta inesperada de la API de paginación de estudiantes:', response);
         return {
           estudiantes: [],
           totalPages: 0,
@@ -48,25 +72,16 @@ export const estudianteService = {
         };
       }
 
-      const { content, page: pageInfo } = response.data;
-
-      const mappedEstudiantes: EstudianteResponseDTO[] = content.map((est: EstudianteContent) => ({
-        id: est.id,
-        nombre: est.nombre,
-        apellido: est.apellido,
-        dni: est.dni,
-        activo: est.activo,
-        gradoId: est.gradoId,
-        gradoNombre: est.gradoNombre
-      }));
+      const { content, totalPages, totalElements /*, number, size */ } = response;
+      const mappedEstudiantes: Estudiante[] = content.map(mapApiEstudianteToModel);
 
       return {
         estudiantes: mappedEstudiantes,
-        totalPages: pageInfo.totalPages,
-        totalElements: pageInfo.totalElements
+        totalPages: totalPages,
+        totalElements: totalElements
       };
     } catch (error) {
-      console.error('Error detallado al obtener estudiantes:', error);
+      console.error('Error detallado al obtener estudiantes paginados:', error);
       return {
         estudiantes: [],
         totalPages: 0,
@@ -74,4 +89,4 @@ export const estudianteService = {
       };
     }
   }
-}; 
+};

@@ -24,8 +24,7 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  Tabs,
-  Tab
+  
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,11 +33,12 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { userService } from '../../services/api/userService';
+import { userService } from '../../services';
 import { estudianteService } from '../../services/api/estudianteService';
-import { UserResponseDTO, UserRequestDTO } from '../../types/auth';
+import { UserResponseDTO, UserRequestDTO } from '../../types';
 import UserForm from '../../components/admin/UserForm';
 import { useAuth } from '../../hooks/useAuth';
+import GenericTabs from '../../components/common/GenericTabs.tsx';
 
 // Tipo unificado para manejar ambos tipos de usuarios en el estado y la tabla
 // Incluye email como opcional ya que los estudiantes no lo tienen
@@ -169,7 +169,7 @@ const ManageUsers: React.FC = () => {
     setSelectedUserId(null);
   };
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
+  const handleTabChange = (newValue: string) => {
     setSelectedTab(newValue);
     setPage(0);
   };
@@ -279,18 +279,15 @@ const ManageUsers: React.FC = () => {
   }
 
   // Cargar usuarios al montar el componente y cuando cambie la pestaña
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    fetchUsers();
+    fetchUsers().then(r => r );
     setPage(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [fetchUsers, selectedTab]);
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Gestión de Usuarios
-      </Typography>
-      
       <Paper sx={{ mb: 3, p: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <TextField
@@ -319,22 +316,19 @@ const ManageUsers: React.FC = () => {
       </Paper>
 
       {/* Barra de Pestañas */}
-      <Paper sx={{ mb: 3 }}>
-        <Tabs
-          value={selectedTab}
+      <GenericTabs
+          tabs={[
+            { value: 'all', label: 'Todos' },
+            { value: 'ROLE_ESTUDIANTE', label: 'Alumnos' },
+            { value: 'ROLE_PROFESOR', label: 'Profesores' },
+            { value: 'ROLE_TUTOR', label: 'Tutores' },
+            { value: 'ROLE_ADMINISTRADOR', label: 'Administradores' }
+          ]}
+          selectedValue={selectedTab}
           onChange={handleTabChange}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="fullWidth"
-          aria-label="filtrar usuarios por rol"
-        >
-          <Tab label="Todos" value="all" />
-          <Tab label="Alumnos" value="ROLE_ESTUDIANTE" />
-          <Tab label="Profesores" value="ROLE_PROFESOR" />
-          <Tab label="Tutores" value="ROLE_TUTOR" />
-          <Tab label="Administradores" value="ROLE_ADMINISTRADOR" />
-        </Tabs>
-      </Paper>
+          ariaLabel="filtrar usuarios por rol"
+          sx={{ mb: 3 }}
+      />
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>

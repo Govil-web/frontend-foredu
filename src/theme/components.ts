@@ -132,31 +132,31 @@ const componentsConfig = (theme: Theme): Components<Omit<Theme, 'components'>> =
       },
     },
   },
-  MuiListItemButton: {
-    styleOverrides: {
-      root: {
-        borderRadius: theme.shape.borderRadius,
-        marginBottom: theme.spacing(0.5),
-        '&.Mui-selected': {
-          backgroundColor: theme.palette.action.selected,
-          color: theme.palette.primary.main,
-          '&:hover': {
-            backgroundColor: theme.palette.action.hover,
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            left: 0,
-            top: '25%',
-            bottom: '25%',
-            width: '3px',
-            backgroundColor: theme.palette.primary.main,
-            borderRadius: theme.shape.borderRadius,
-          },
-        },
-      },
-    },
-  },
+  // MuiListItemButton: {
+  //   styleOverrides: {
+  //     root: {
+  //       borderRadius: '8px',
+  //       marginBottom: '4px',
+  //       '&.Mui-selected': {
+  //         backgroundColor: 'rgba(233, 81, 29, 0.08)',
+  //         color: '#E9511D',
+  //         '&:hover': {
+  //           backgroundColor: 'rgba(233, 81, 29, 0.12)',
+  //         },
+  //         '&::before': {
+  //           content: '""',
+  //           position: 'absolute',
+  //           left: 0,
+  //           top: '25%',
+  //           bottom: '25%',
+  //           width: '3px',
+  //           backgroundColor: '#E9511D',
+  //           borderRadius: '0 4px 4px 0',
+  //         },
+  //       },
+  //     },
+  //   },
+  // },
   MuiTextField: {
     styleOverrides: {
       root: {

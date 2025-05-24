@@ -22,7 +22,7 @@ import {
     SearchRounded,
 } from '@mui/icons-material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { User } from '../types/auth';
+import { User } from '../../../types';
 import { styleUtils } from '../../../utils/styleUtils.ts';
 import { getAppTitle, menuText } from '../../../utils/appTextUtils.ts';
 import CircleIconButton from '../../common/CircleIconButton';
@@ -46,6 +46,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                                              }) => {
     const theme = useTheme();
     const navigate = useNavigate();
+
     const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
     const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -63,7 +64,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     };
 
     const iconStyles = {
-       fontSize: 20,
+        fontSize: 20,
         fill: theme.palette.grey[100],
         stroke: theme.palette.grey[400],
         strokeWidth: 1.5
@@ -79,7 +80,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                     easing: theme.transitions.easing.sharp,
                     duration: theme.transitions.duration.leavingScreen,
                 }),
-                backgroundColor: theme.palette.background.main,
+                backgroundColor: theme.palette.background.default,
                 ...styleUtils.boxShadow(theme, 'low'),
                 zIndex: theme.zIndex.drawer + 1,
             }}
@@ -213,8 +214,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                         </MenuItem>
                     </Menu>
                 </Box>
-
-
             </Toolbar>
         </AppBar>
     );

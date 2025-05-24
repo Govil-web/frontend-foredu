@@ -1,6 +1,6 @@
 // src/services/courses/courseService.ts
 import { apiClient } from "../api/axiosConfig";
-import { Course, ApiResponse } from "../../types/course";
+import { Course, ApiResponse } from "../../types";
 
 export const courseService = {
   getAll: async () => {

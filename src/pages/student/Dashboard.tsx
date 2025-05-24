@@ -4,7 +4,6 @@ import {
   Box,
   Typography,
   Grid,
-  Paper,
   Card,
   CardContent,
   List,

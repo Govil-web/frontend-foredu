@@ -4,26 +4,26 @@ import {
   Box,
   Drawer,
   List,
-  Typography,
   Divider,
-  IconButton,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Avatar,
   useTheme,
   ListItemButton,
 } from '@mui/material';
 import {
-  ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  School as SchoolIcon,
+  Cottage as CottageIcon,
+  PeopleAltOutlined as PeopleIcon,
+  PanoramaWideAngleSharp as PanoramaWideAngleSharpIcon,
   CalendarMonth as CalendarIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
   Assessment as AssessmentIcon,
-  Settings as SettingsIcon,
+  ArticleOutlined as ArticleIcon,
+  HeadsetMic as HeadsetMicIcon,
+  // Settings as SettingsIcon,
+  MailOutlineOutlined as MailOutlineIcon,
 } from '@mui/icons-material';
 import { styleUtils } from '../../../utils/styleUtils';
 import { UserRole } from '../../../types/auth';
@@ -40,12 +40,12 @@ const getNavigationItems = (role: UserRole) => {
   switch (role) {
     case UserRole.ADMIN:
       return [
-        { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
+        { text: 'Dashboard', icon: <CottageIcon />, path: '/admin/dashboard' },
+        { text: 'Grados', icon: <PanoramaWideAngleSharpIcon />, path: '/admin/grades' },
+        { text: 'Calendario', icon: <CalendarIcon />, path: '/admin/reports' },
         { text: 'Usuarios', icon: <PeopleIcon />, path: '/admin/users' },
-        { text: 'Cursos', icon: <SchoolIcon />, path: '/admin/courses' },
-        { text: 'Reportes', icon: <AssessmentIcon />, path: '/admin/reports' },
-        { text: 'Configuración', icon: <SettingsIcon />, path: '/admin/settings' },
-        ...commonItems
+        { text: 'Mensajes', icon: <MailOutlineIcon />, path: '#' },
+        { text: 'Boletines', icon: <ArticleIcon />, path: '#' }
       ];
     case UserRole.PROFESOR:
       return [
@@ -95,160 +95,106 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <Drawer
-      variant={isMobile ? "temporary" : "persistent"}
-      open={open}
-      onClose={handleDrawerClose}
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-          backgroundColor: theme.palette.background.paper,
-          borderRight: 'none',
-          ...styleUtils.boxShadow(theme, 'low'),
-        },
-      }}
-    >
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        p: 1, 
-        minHeight: '64px' 
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
-        <img src={Logo} alt="Foredu Logo" style={{ width:'172px' , height: '40px' }} />
+  variant={isMobile ? "temporary" : "persistent"}
+  open={open}
+  onClose={handleDrawerClose}
+  sx={{
+    width: drawerWidth,
+    flexShrink: 0,
+    '& .MuiDrawer-paper': {
+      width: drawerWidth,
+      boxSizing: 'border-box',
+      backgroundColor: '#E7EAF5',
+      borderRight: 'none',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+    },
+  }}
+>
+  <Box sx={{ 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    p: 1, 
+    minHeight: '64px' 
+  }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
+      <img src={Logo} alt="Foredu Logo" style={{ width: '172px', height: '40px' }} />
+    </Box>
+  </Box>
 
-        </Box>
-        <IconButton onClick={handleDrawerClose}>
-          <ChevronLeftIcon />
-        </IconButton>
-      </Box>
-      
-      <Divider />
-      
-      <Box sx={{ 
-        p: 2, 
-        textAlign: 'center', 
-        position: 'relative', 
-        overflow: 'hidden' 
-      }}>
-        <Avatar 
-          alt={user?.nombre}
-          sx={{ 
-            width: 80, 
-            height: 80, 
-            mx: 'auto', 
-            mb: 1,
-            bgcolor: theme.palette.primary.main,
-            color: '#fff',
-            boxShadow: `0 4px 12px ${theme.palette.primary.main}30`,
-            border: '4px solid white'
-          }}
-        >
-          {user?.nombre?.charAt(0)}
-        </Avatar>
-        
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-          {user?.nombre}
-        </Typography>
-        
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            display: 'inline-block',
-            color: theme.palette.text.secondary,
-            bgcolor: `${theme.palette.primary.main}10`,
-            px: 1.5,
-            py: 0.5,
-            borderRadius: '12px',
-            marginTop: 0.5
-          }}
-        >
-          {user?.role === UserRole.ADMIN ? 'Administrador' : 
-           user?.role === UserRole.PROFESOR ? 'Profesor' :
-           user?.role === UserRole.ESTUDIANTE ? 'Estudiante' : 'Tutor'}
-        </Typography>
-      </Box>
-      
-      <Divider />
-      
-      <List sx={{ p: 1, flexGrow: 1 }}>
-        {navigationItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <ListItem 
-              key={item.text}
-              disablePadding
-              sx={{ 
-                margin: theme.spacing(0.5, 1),
-                borderRadius: '8px',
-                backgroundColor: isActive ? theme.palette.primary.main : 'transparent',
-                color: isActive ? '#fff' : theme.palette.text.primary,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  backgroundColor: isActive 
-                    ? theme.palette.primary.dark 
-                    : `${theme.palette.primary.light}20`,
-                  transform: 'translateX(5px)',
-                },
-              }}
-            >
-              <ListItemButton 
-                selected={isActive}
-                onClick={() => handleNavigation(item.path)}
-                sx={{
-                  '& .MuiListItemIcon-root': {
-                    color: isActive ? '#fff' : theme.palette.primary.main,
-                    transition: 'color 0.2s ease',
-                  },
-                }}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText 
-                  primary={item.text}
-                  primaryTypographyProps={{
-                    fontWeight: isActive ? 'bold' : 'medium'
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
-      
-      <Box sx={{ 
-        p: 2, 
-        marginTop: 'auto', 
-        backgroundColor: theme.palette.background.paper, 
-        position: 'relative', 
-        overflow: 'hidden'
-      }}>
+  <List sx={{ p: 1, flexGrow: 1, marginTop: 2 }}>
+    {navigationItems.map((item) => {
+      const isActive = location.pathname === item.path;
+      return (
         <ListItem 
+          key={item.text}
           disablePadding
           sx={{ 
-            ...styleUtils.hoverEffect(theme),
+            margin: theme.spacing(0.5, 1),
             borderRadius: '8px',
+            backgroundColor: isActive ? theme.palette.background.paper : 'transparent',
+            color: theme.palette.text.primary,
+            transition: 'all 0.2s ease',
+            width: '75%',
+            '&:hover': {
+              backgroundColor: `${theme.palette.primary.light}20`,
+              transform: 'translateX(5px)',
+            },
           }}
         >
-          <ListItemButton onClick={handleLogout}>
-            <ListItemIcon><LogoutIcon /></ListItemIcon>
-            <ListItemText primary="Cerrar sesión" />
+          <ListItemButton 
+            selected={isActive}
+            onClick={() => handleNavigation(item.path)}
+            sx={{
+              '& .MuiListItemIcon-root': {
+                color: isActive ? '#fff' : theme.palette.primary.main,
+                transition: 'color 0.2s ease',
+              },
+            }}
+          >
+            <ListItemIcon>
+              {React.cloneElement(item.icon, {
+                sx: {
+                  color: isActive ? theme.palette.primary.main : theme.palette.text.primary,
+                },
+              })}
+            </ListItemIcon>
+
+            <ListItemText 
+              primary={item.text}
+              primaryTypographyProps={{
+                fontWeight: isActive ? 'bold' : 'medium',
+                color: theme.palette.text.primary,
+              }}
+            />
           </ListItemButton>
         </ListItem>
-        
-        <Box
-          sx={{
-            ...styleUtils.backgroundDecoration(theme, {
-              color: theme.palette.primary.main, 
-              size: 120, 
-              position: 'bottom-left'
-            })
-          }}
-        />
-      </Box>
-    </Drawer>
+      );
+    })}
+  </List>
+
+  {/* Soporte y Salir */}
+  <Box sx={{ px: 2 }}>
+
+    <ListItem disablePadding sx={{ ...styleUtils.hoverEffect(theme), borderRadius: '8px' }}>
+      <ListItemButton onClick={() => alert('Soporte')}>
+        <ListItemIcon><HeadsetMicIcon /></ListItemIcon>
+        <ListItemText primary="Soporte" />
+      </ListItemButton>
+    </ListItem>
+
+    <Divider sx={{ my: 1, borderColor: '#D6D6D6' }} />
+
+    <ListItem disablePadding sx={{ ...styleUtils.hoverEffect(theme), borderRadius: '8px' }}>
+      <ListItemButton onClick={handleLogout}>
+        <ListItemIcon><LogoutIcon /></ListItemIcon>
+        <ListItemText primary="Salir" />
+      </ListItemButton>
+    </ListItem>
+  </Box>
+</Drawer>
   );
 };
 

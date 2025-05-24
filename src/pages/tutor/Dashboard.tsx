@@ -14,7 +14,6 @@ import {
   Avatar,
   Button,
   Divider,
-  AvatarGroup,
   IconButton,
 } from '@mui/material';
 import {
