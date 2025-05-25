@@ -1,145 +1,112 @@
 // pages/admin/GradeDetails.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Card, TextField, Button, Checkbox, IconButton } from '@mui/material';
-import { GenericTabs, Loading } from '../../components/common';
+import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import { GenericTabs, Loading } from '../../components/common'; // Loading podría no ser necesario aquí si las pestañas manejan su propia carga
 import { courseService } from '../../services/courses/courseService';
+import { Course } from '../../types'; // Tu tipo Course
+
+import { ComunicacionesTab } from '../../components/courses/ComunicacionesTab';
+import { AsistenciaTab } from '../../components/courses/AsistenciaTab';
 
 const GradeDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [selectedTab, setSelectedTab] = useState('comunicaciones');
-    const [newPost, setNewPost] = useState('');
-    const [gradeDetails, setGradeDetails] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [selectedTab, setSelectedTab] = useState('asistencia');
+    const [gradeDetails, setGradeDetails] = useState<Course | null>(null); // Usar tu tipo Course
+    const [loadingGrade, setLoadingGrade] = useState(true);
+    const [errorGrade, setErrorGrade] = useState<string | null>(null);
 
-    // Datos de ejemplo para publicaciones y eventos
-    const [posts, setPosts] = useState([
-        {
-            id: 1,
-            title: 'Título',
-            content: 'Lorem ipsum dolor sit amet consectetur. Elit malesuada eget facilis i psi...',
-            author: 'Usuario',
-            date: '2023-09-20'
-        }
-    ]);
-
-    const [events, setEvents] = useState([
-        { id: 1, title: 'Reunion de padres', date: '21/09', time: '11:00 - 12:00', completed: false },
-        { id: 2, title: 'Acto por San Martín', date: '21/09', time: '12:30 - 14:00', completed: true }
-    ]);
+    const numericGradeId = id ? Number(id) : null;
 
     useEffect(() => {
         const fetchGradeDetails = async () => {
+            if (!numericGradeId) {
+                setErrorGrade("ID de grado no válido.");
+                setLoadingGrade(false);
+                // Considera redirigir o mostrar un mensaje más prominente
+                // navigate('/admin/courses'); 
+                return;
+            }
+            setLoadingGrade(true);
+            setErrorGrade(null);
             try {
-                const response = await courseService.getById(Number(id));
-                setGradeDetails(response.data);
-            } catch (error) {
+                // Asumo que courseService.getById devuelve una estructura que tiene `data` como el objeto Course
+                // y `estado` para indicar éxito/fallo
+                const response = await courseService.getById(numericGradeId);
+                if (response.estado && response.data) { // Ajusta según la estructura de tu ApiResponse<Course>
+                    setGradeDetails(response.data);
+                } else {
+                    throw new Error(response.message || 'No se pudieron cargar los detalles del grado.');
+                }
+            } catch (error: any) {
                 console.error('Error fetching grade details:', error);
+                setErrorGrade(error.message || 'Error al buscar detalles del grado.');
             } finally {
-                setLoading(false);
+                setLoadingGrade(false);
             }
         };
 
         fetchGradeDetails();
-    }, [id]);
+    }, [numericGradeId, navigate]); // Dependencia de numericGradeId
 
-    const handlePublish = () => {
-        if (newPost.trim()) {
-            const newPostObj = {
-                id: posts.length + 1,
-                title: 'Nueva publicación',
-                content: newPost,
-                author: 'Usuario',
-                date: new Date().toISOString()
-            };
-            setPosts([...posts, newPostObj]);
-            setNewPost('');
-        }
-    };
+    const orderedTabs = [
+        { value: 'asistencia', label: 'Asistencia' },
+        { value: 'comunicaciones', label: 'Comunicaciones' },
+        { value: 'calendario', label: 'Calendario' },
+        { value: 'integrantes', label: 'Integrantes' },
+        { value: 'boletines', label: 'Boletines' },
+    ];
 
-    const toggleEvent = (eventId: number) => {
-        setEvents(events.map(event =>
-            event.id === eventId ? { ...event, completed: !event.completed } : event
-        ));
-    };
+    if (loadingGrade) return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+            <CircularProgress />
+            <Typography sx={{ml: 2}}>Cargando detalles del grado...</Typography>
+        </Box>
+    );
+    
+    if (errorGrade) return <Alert severity="error" sx={{m:3}}>{errorGrade}</Alert>;
+    if (!gradeDetails || !numericGradeId) return <Alert severity="warning" sx={{m:3}}>No se encontraron detalles para el grado especificado.</Alert>;
 
-    if (loading) return <Loading />;
 
     return (
         <Box sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 1 }}>
+                {/* Asumiendo que gradeDetails (Course) tiene una propiedad 'nombre' o 'name' */}
+                Grado: {gradeDetails?.curso || `ID ${gradeDetails?.id}`} 
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, backgroundColor: '#f0f0f0', p: 1, borderRadius: 1 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                    {/* Esto debería venir de gradeDetails o un contexto, ej. gradeDetails.profesorAsignado?.nombre */}
+                    Profesora: {gradeDetails?.profesorNombre || 'No asignado'} 
+                </Typography>
+            </Box>
+
             <GenericTabs
-                tabs={[
-                    { value: 'comunicaciones', label: 'Comunicaciones' },
-                    { value: 'calendario', label: 'Calendario' },
-                    { value: 'integrantes', label: 'Integrantes' },
-                    { value: 'asistencia', label: 'Asistencia' },
-                    { value: 'boletines', label: 'Boletines' }
-                ]}
+                tabs={orderedTabs}
                 selectedValue={selectedTab}
                 onChange={setSelectedTab}
                 sx={{ mb: 3 }}
             />
 
-            {selectedTab === 'comunicaciones' && (
-                <Grid container spacing={3}>
-                    <Grid item xs={12} md={8}>
-                        <Card sx={{ p: 3, mb: 3 }}>
-                            <Typography variant="h6" gutterBottom>¿Qué querés contar hoy?</Typography>
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={4}
-                                value={newPost}
-                                onChange={(e) => setNewPost(e.target.value)}
-                                sx={{ mb: 2 }}
-                            />
-                            <Button
-                                variant="contained"
-                                onClick={handlePublish}
-                                sx={{ float: 'right' }}
-                            >
-                                Publicar
-                            </Button>
-                        </Card>
-
-                        {posts.map(post => (
-                            <Card key={post.id} sx={{ p: 3, mb: 3 }}>
-                                <Typography variant="h6" gutterBottom>{post.title}</Typography>
-                                <Typography variant="body2" color="textSecondary" gutterBottom>
-                                    {post.author} - {post.date}
-                                </Typography>
-                                <Typography variant="body1">{post.content}</Typography>
-                            </Card>
-                        ))}
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{ p: 3 }}>
-                            <Typography variant="h6" gutterBottom>Próximos eventos</Typography>
-                            {events.map(event => (
-                                <Box key={event.id} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                    <Checkbox
-                                        checked={event.completed}
-                                        onChange={() => toggleEvent(event.id)}
-                                    />
-                                    <Box>
-                                        <Typography variant="body1">
-                                            {event.title} {event.date} - {event.time}
-                                        </Typography>
-                                        <Typography variant="caption">
-                                            {event.completed ? 'Completado' : 'Pendiente'}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            ))}
-                            <Button sx={{ mt: 2 }}>Ver todos</Button>
-                        </Card>
-                    </Grid>
-                </Grid>
+            {selectedTab === 'asistencia' && numericGradeId && (
+                <AsistenciaTab gradeId={numericGradeId} />
             )}
 
-            {/* Aquí puedes agregar el contenido para las otras pestañas */}
+            {selectedTab === 'comunicaciones' && numericGradeId && (
+                 // Pasa el gradeId si ComunicacionesTab lo necesita para filtrar o guardar
+                <ComunicacionesTab /* gradeId={numericGradeId} */ />
+            )}
+
+            {selectedTab === 'calendario' && (
+                <Box><Typography variant="h6">Contenido de Calendario (Próximamente)</Typography></Box>
+            )}
+            {selectedTab === 'integrantes' && (
+                <Box><Typography variant="h6">Contenido de Integrantes (Próximamente)</Typography></Box>
+            )}
+            {selectedTab === 'boletines' && (
+                <Box><Typography variant="h6">Contenido de Boletines (Próximamente)</Typography></Box>
+            )}
         </Box>
     );
 };

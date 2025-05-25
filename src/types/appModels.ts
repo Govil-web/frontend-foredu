@@ -10,12 +10,14 @@ export interface Course {
 }
 
 export interface Estudiante {
-    id: number;
-    nombre: string;
-    apellido: string;
-    dni: string;
-    activo: boolean;
-    genero: string;
-    gradoId: number;
-    gradoNombre: string;
+  id: number;
+  nombre: string;
+  apellido: string;
+  dni?: string;
+  activo?: boolean;
+  genero?: string;
+  gradoId?: number;
+  gradoNombre?: string;
+  avatarUrl?: string; // Important for display
+  nombreCompleto?: string; // Often added as a helper
 }

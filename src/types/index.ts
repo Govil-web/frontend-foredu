@@ -14,6 +14,12 @@ export type {
     Estudiante
 } from './appModels';
 
+export type {
+ApiAsistenciaDTO, ApiDetalleAsistenciaByAlumno, TipoEstadoAsistencia, 
+ApiAsistenciaRequest, ApiAsistenciaUpdateRequestDto,BackendApiResponse, 
+ApiAsistenciaDiariaDTO
+} from './asistencia';
+
 export interface ApiResponse<T> {
     estado: boolean;
     message: string;

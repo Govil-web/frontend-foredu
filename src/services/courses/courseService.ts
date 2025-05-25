@@ -20,4 +20,24 @@ export const courseService = {
       };
     }
   },
+    getById: async (id: number): Promise<ApiResponse<Course>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<Course>>(`/grado/${id}`);
+      
+      // Logging detallado
+      console.log("Respuesta del servicio de curso por ID:", response);
+      
+      return response;
+    } catch (error) {
+      console.error("Error al obtener curso por ID:", error);
+      return {
+        estado: false,
+        message: "Error al obtener curso por ID",
+        dataIterable: [],
+      }
+    }
+
+}
+
 };
+
