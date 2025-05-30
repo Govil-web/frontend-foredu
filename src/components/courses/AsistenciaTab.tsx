@@ -1,15 +1,14 @@
 // src/components/grade/AsistenciaTab.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-// ... (tus imports de MUI como estaban)
 import {
-  Box, Typography, Button, Avatar, Tooltip,
+  Box, Typography, Button, Avatar, 
   CircularProgress, Alert, Grid, Paper, Select, MenuItem, FormControl, InputLabel, TextField
 } from '@mui/material';
 import { GenericTable } from '../common/GenericTable';
 import { estudianteService } from '../../services/api/estudianteService';
 import { asistenciaService } from '../../services/asistencia/asistenciaService';
-import { Estudiante } from '../../types'; // Asegúrate que la ruta a tus tipos sea correcta
-import { ApiAsistenciaDTO, TipoEstadoAsistencia, ApiAsistenciaRequest, BackendApiResponse, ApiDetalleAsistenciaByAlumno } from '../../types';
+import { Estudiante } from '../../types'; 
+import { ApiAsistenciaDTO, TipoEstadoAsistencia, ApiAsistenciaRequest, BackendApiResponse } from '../../types';
 
 import SaveIcon from '@mui/icons-material/Save';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -41,7 +40,7 @@ interface StudentRangeSummary {
 }
 
 const VALID_INPUT_ESTADOS: Exclude<TipoEstadoAsistencia, 'NO_REGISTRADA'>[] = [
-  'PRESENTE', 'AUSENTE', 'TARDE', 'JUSTIFICADO_AUSENTE', 'JUSTIFICADO_TARDE'
+  'PRESENTE', 'AUSENTE', 'TARDE', 'JUSTIFICADO',
 ];
 
 
@@ -176,8 +175,7 @@ export const AsistenciaTab: React.FC<AsistenciaTabProps> = ({ gradeId }) => {
                 case 'PRESENTE': summary.totalPresente++; break;
                 case 'AUSENTE': summary.totalAusente++; break;
                 case 'TARDE': summary.totalTarde++; break;
-                case 'JUSTIFICADO_AUSENTE':
-                case 'JUSTIFICADO_TARDE':
+                case 'JUSTIFICADO':
                   summary.totalJustificado++; break;
                 default:
                   console.warn(`AsistenciaTab: Estado desconocido '${record.estado}' en record:`, record);
@@ -199,13 +197,13 @@ export const AsistenciaTab: React.FC<AsistenciaTabProps> = ({ gradeId }) => {
     }
   };
 
-  const rangeViewColumns = [ /* ... (igual que antes) ... */
-    { id: 'nombreCompleto', label: 'Nombre', render: (_v: any, r: StudentRangeSummary) => (<Box sx={{ display: 'flex', alignItems: 'center', minWidth: 180 }}><Avatar src={r.avatarUrl} sx={{ width: 32, height: 32, mr: 1.5 }}>{r.nombreCompleto?.[0]}</Avatar><Typography variant="body2">{r.nombreCompleto}</Typography></Box>), },
-    { id: 'totalPresente', label: 'Presentes', align: 'center', render: (v:number) => v},
-    { id: 'totalAusente', label: 'Ausentes', align: 'center', render: (v:number) => v },
-    { id: 'totalTarde', label: 'Tardes', align: 'center', render: (v:number) => v },
-    { id: 'totalJustificado', label: 'Justificadas', align: 'center', render: (v:number) => v },
-    { id: 'totalDiasEnRangoConRegistro', label: 'Días c/Registro', align: 'center', render: (v:number) => v },
+  const rangeViewColumns = [
+    { id: 'nombreCompleto', label: 'Nombre', render: (_v: any, r: StudentRangeSummary) => (<Box sx={{ display: 'flex', alignItems: 'center', minWidth: 180 }}><Avatar src={r.avatarUrl} sx={{ width: 32, height: 32, mr: 1.5 }}>{r.nombreCompleto?.[0]}</Avatar><Typography variant="body2">{r.nombreCompleto}</Typography></Box>) },
+    { id: 'totalPresente', label: 'Presentes', align: 'center' as const, render: (v:number) => v },
+    { id: 'totalAusente', label: 'Ausentes', align: 'center' as const, render: (v:number) => v },
+    { id: 'totalTarde', label: 'Tardes', align: 'center' as const, render: (v:number) => v },
+    { id: 'totalJustificado', label: 'Justificadas', align: 'center' as const, render: (v:number) => v },
+    { id: 'totalDiasEnRangoConRegistro', label: 'Días c/Registro', align: 'center' as const, render: (v:number) => v },
   ];
 
   const handleStudentStatusChange = (studentId: number, newStatus: TipoEstadoAsistencia) => { /* ... (igual) ... */
@@ -328,5 +326,4 @@ export const AsistenciaTab: React.FC<AsistenciaTabProps> = ({ gradeId }) => {
   );
 };
 
-// No olvides exportar default AsistenciaTab si es un archivo separado.
-// export default AsistenciaTab;
+ export default AsistenciaTab;

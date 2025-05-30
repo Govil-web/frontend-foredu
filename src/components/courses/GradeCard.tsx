@@ -13,6 +13,10 @@ const courseIcons: Record<string, { color: string; bgColor: string }> = {
     CUARTO: { color: '#7E57C2', bgColor: '#EDE7F6' },
     QUINTO: { color: '#FF5722', bgColor: '#FBE9E7' },
     SEXTO: { color: '#26A69A', bgColor: '#E0F2F1' },
+    SEPTIMO: { color: '#FF7043', bgColor: '#FFEBEE' },
+    OCTAVO: { color: '#AB47BC', bgColor: '#F3E5F5' },
+    NOVENO: { color: '#FFCA28', bgColor: '#FFFDE7' },
+    DECIMO: { color: '#FF7043', bgColor: '#FFEBEE' },
 };
 
 export const GradeCard: React.FC<{ course: Course; onClick: () => void }> = ({ course, onClick }) => {

@@ -1,11 +1,10 @@
 // pages/admin/GradeDetails.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, CircularProgress, Alert } from '@mui/material';
-import { GenericTabs, Loading } from '../../components/common'; // Loading podría no ser necesario aquí si las pestañas manejan su propia carga
+import { Box, Typography, CircularProgress, Alert } from '@mui/material';// Loading podría no ser necesario aquí si las pestañas manejan su propia carga
 import { courseService } from '../../services/courses/courseService';
 import { Course } from '../../types'; // Tu tipo Course
-
+import { GenericTabs } from '../../components/common/GenericTabs';
 import { ComunicacionesTab } from '../../components/courses/ComunicacionesTab';
 import { AsistenciaTab } from '../../components/courses/AsistenciaTab';
 

@@ -24,9 +24,9 @@ export type TipoEstadoAsistencia =
   | 'PRESENTE'
   | 'AUSENTE'
   | 'TARDE'
-  | 'JUSTIFICADO_AUSENTE' // Si manejas ausencias justificadas como un estado separado
-  | 'JUSTIFICADO_TARDE'   // Si manejas tardes justificadas
-  | 'NO_REGISTRADA';      // Estado para el frontend si no hay registro
+  | 'JUSTIFICADO' 
+  |'NO_REGISTRADA';// Estado para el frontend si no hay registro
+    
 
 
 /**

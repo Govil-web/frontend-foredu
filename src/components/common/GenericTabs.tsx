@@ -17,7 +17,7 @@ interface GenericTabsProps {
     tabSx?: object;
 }
 
-const GenericTabs: React.FC<GenericTabsProps> = ({
+export const GenericTabs: React.FC<GenericTabsProps> = ({
                                                      tabs,
                                                      selectedValue,
                                                      onChange,
