@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -17,7 +17,6 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -26,27 +25,24 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { userService } from '../../services';
-import { estudianteService } from '../../services/api/estudianteService';
-import { UserResponseDTO, UserRequestDTO } from '../../types';
+import { useUsers } from '../../hooks/useUsers';
+import { useCreateUser } from '../../hooks/useCreateUser';
+import { useUpdateUser } from '../../hooks/useUpdateUser';
+import { useDeleteUser } from '../../hooks/useDeleteUser';
+import { User } from '../../mappers/userMapper';
 import UserForm from '../../components/admin/UserForm';
 import { useAuth } from '../../hooks/useAuth';
 import GenericTabs from '../../components/common/GenericTabs.tsx';
 import { GenericTable } from '../../components/common/GenericTable';
 
-
-// Tipo unificado para manejar ambos tipos de usuarios en el estado y la tabla
-// Incluye email como opcional ya que los estudiantes no lo tienen
-type CombinedUserResponseDTO = Omit<UserResponseDTO, 'email'> & { email?: string };
+// Adaptar User a Record<string, unknown> para la tabla
+type UserRow = Record<string, unknown>;
 
 const ManageUsers: React.FC = () => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -54,26 +50,25 @@ const ManageUsers: React.FC = () => {
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  const [selectedUser, setSelectedUser] = useState<CombinedUserResponseDTO | null>(null);
-  const [allCombinedUsers, setAllCombinedUsers] = useState<CombinedUserResponseDTO[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  interface Column<T> {
-    id: string;
-    label: string;
-    align?: 'right' | 'left' | 'center';
-    render: (value: any, row: T) => React.ReactNode;
-  }
+  // Hooks de React Query
+  const { users, isLoading, error, refetch } = useUsers();
+  const { mutate: createUser, isLoading: isCreating } = useCreateUser();
+  const { mutate: updateUser, isLoading: isUpdating } = useUpdateUser();
+  const { mutate: deleteUser, isLoading: isDeleting } = useDeleteUser();
 
-  const columns: Column<CombinedUserResponseDTO>[] = [
+  // Columnas de la tabla (ajustar render para aceptar Record<string, unknown>)
+  const columns = [
     {
       id: 'nombre',
       label: 'Nombre',
-      render: (_: unknown, row: CombinedUserResponseDTO) => `${row.nombre} ${row.apellido || ''}`,
+      render: (_: unknown, row: UserRow) => `${row.nombre} ${row.apellido || ''}`,
     },
-    { 
-      id: 'email', 
+    {
+      id: 'email',
       label: 'Email',
-      render: (value: string) => value || 'N/A'
+      render: (value: string) => value || 'N/A',
     },
     {
       id: 'rol',
@@ -81,20 +76,20 @@ const ManageUsers: React.FC = () => {
       render: (value: string) => (
         <Chip
           label={
-            value === 'ROLE_ADMINISTRADOR' ? 'Administrador' : 
+            value === 'ROLE_ADMINISTRADOR' ? 'Administrador' :
             value === 'ROLE_PROFESOR' ? 'Profesor' :
-            value === 'ROLE_TUTOR' ? 'Tutor' : 
+            value === 'ROLE_TUTOR' ? 'Tutor' :
             value === 'ROLE_ESTUDIANTE' ? 'Estudiante' : 'Desconocido'
           }
           color={
             value === 'ROLE_ADMINISTRADOR' ? 'error' :
             value === 'ROLE_PROFESOR' ? 'primary' :
-            value === 'ROLE_TUTOR' ? 'success' : 
+            value === 'ROLE_TUTOR' ? 'success' :
             value === 'ROLE_ESTUDIANTE' ? 'info' : 'default'
           }
           size="small"
         />
-      )
+      ),
     },
     {
       id: 'activo',
@@ -105,112 +100,40 @@ const ManageUsers: React.FC = () => {
           color={value ? 'success' : 'default'}
           size="small"
         />
-      )
+      ),
     },
     {
       id: 'acciones',
       label: 'Acciones',
       align: 'right',
-      render: (_: unknown, row: CombinedUserResponseDTO) => (
-        <IconButton
-          size="small"
-          onClick={(e) => handleOpenMenu(e, row.id)}
-        >
+      render: (_: unknown, row: UserRow) => (
+        <IconButton size="small" onClick={(e) => handleOpenMenu(e, row.id as number)}>
           <MoreVertIcon />
         </IconButton>
-      )
-    }
+      ),
+    },
   ];
 
-
-  // Función para cargar usuarios
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      let combinedUsers: CombinedUserResponseDTO[] = [];
-
-      if (selectedTab === 'ROLE_ESTUDIANTE') {
-        const { estudiantes, totalElements: estTotalElements } = 
-          await estudianteService.getAll(0, 10000); // Traer todos los estudiantes para paginar en frontend
-        setTotalElements(estTotalElements);
-        combinedUsers = estudiantes.map(est => ({
-          id: est.id,
-          nombre: est.nombre,
-          apellido: est.apellido,
-          dni: est.dni || '',
-          activo: est.activo ?? false,
-          rol: 'ROLE_ESTUDIANTE',
-          email: undefined,
-          tipoDocumento: '',
-          telefono: '',
-          institucionId: 0,
-          institucion: ''
-        }));
-        setAllCombinedUsers(combinedUsers);
-      } else if (selectedTab === 'all') {
-        const [fetchedUsers, estudiantesResult] = await Promise.all([
-          userService.getAll(),
-          estudianteService.getAll(0, 10000)
-        ]);
-        const otherUsers = Array.isArray(fetchedUsers) ? fetchedUsers : [];
-        const estudiantes = estudiantesResult.estudiantes;
-        const mappedEstudiantes = estudiantes.map(est => ({
-          id: est.id,
-          nombre: est.nombre,
-          apellido: est.apellido,
-          dni: est.dni || '',
-          activo: est.activo ?? false,
-          rol: 'ROLE_ESTUDIANTE',
-          email: undefined,
-          tipoDocumento: '',
-          telefono: '',
-          institucionId: 0,
-          institucion: ''
-        }));
-        combinedUsers = [...otherUsers, ...mappedEstudiantes];
-        setAllCombinedUsers(combinedUsers);
-        setTotalElements(combinedUsers.length);
-      } else {
-        const fetchedUsers = await userService.getAll();
-        combinedUsers = Array.isArray(fetchedUsers) ? fetchedUsers : [];
-        setTotalElements(combinedUsers.length);
-        setAllCombinedUsers(combinedUsers);
-      }
-    } catch (err) {
-      const tabName = selectedTab === 'all' ? 'todos' 
-                      : selectedTab === 'ROLE_ESTUDIANTE' ? 'estudiantes' 
-                      : 'usuarios';
-      console.error(`Error detallado al obtener ${tabName}:`, err);
-      setError(`Error al obtener la lista de ${tabName}`);
-      setAllCombinedUsers([]);
-      setTotalElements(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedTab]);
-
-  // Filtrar usuarios
-  const filteredUsers = (allCombinedUsers || [])
-    .filter(user => {
+  // Adaptar users a UserRow[] para la tabla
+  const filteredUsers = (users || [])
+    .filter((user) => {
       if (selectedTab !== 'all' && selectedTab !== 'ROLE_ESTUDIANTE') {
         return user.rol === selectedTab;
       }
       return true;
     })
-    .filter(user =>
+    .filter((user) =>
       user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    )
+    .map((user) => ({ ...user } as UserRow));
 
-  // Actualizar el total de elementos sobre el array filtrado
-  useEffect(() => {
-    setTotalElements(filteredUsers.length);
-  }, [filteredUsers]);
+  const paginatedUsers = filteredUsers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
-  // Obtener los usuarios a mostrar en la página actual
-  //const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
+  // Handlers
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -219,11 +142,6 @@ const ManageUsers: React.FC = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-   const paginatedUsers = filteredUsers.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, userId: number) => {
     setAnchorEl(event.currentTarget);
@@ -241,10 +159,9 @@ const ManageUsers: React.FC = () => {
   };
 
   const handleEdit = () => {
-    // Buscar el usuario seleccionado
-    const userToEdit = paginatedUsers.find(user => user.id === selectedUserId);
+    const userToEdit = paginatedUsers.find((user) => user.id === selectedUserId);
     if (userToEdit) {
-      setSelectedUser(userToEdit);
+      setSelectedUser(userToEdit as User);
       setDialogMode('edit');
       setOpenDialog(true);
     }
@@ -258,27 +175,26 @@ const ManageUsers: React.FC = () => {
 
   const confirmDelete = async () => {
     if (selectedUserId) {
-      setLoading(true);
-      try {
-        await userService.delete(selectedUserId);
-        fetchUsers();
-        setSnackbar({
-          open: true,
-          message: 'Usuario eliminado correctamente',
-          severity: 'success'
-        });
-      } catch (err) {
-        console.error('Error al eliminar usuario:', err);
-        setSnackbar({
-          open: true,
-          message: 'Error al eliminar usuario',
-          severity: 'error'
-        });
-      } finally {
-        setLoading(false);
-        setDeleteConfirmOpen(false);
-        setSelectedUserId(null);
-      }
+      deleteUser(selectedUserId, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Usuario eliminado correctamente',
+            severity: 'success',
+          });
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al eliminar usuario',
+            severity: 'error',
+          });
+        },
+        onSettled: () => {
+          setDeleteConfirmOpen(false);
+          setSelectedUserId(null);
+        },
+      });
     }
   };
 
@@ -292,40 +208,51 @@ const ManageUsers: React.FC = () => {
     setOpenDialog(false);
   };
 
-  const handleSaveUser = async (userData: UserRequestDTO) => {
-    setLoading(true);
-    try {
-      let updatedUser;
-      if (dialogMode === 'add') {
-        updatedUser = await userService.create(userData);
-      } else {
-        updatedUser = await userService.update(userData);
-      }
-
-      if (updatedUser) {
-        fetchUsers();
-        setOpenDialog(false);
-        setSnackbar({
-          open: true,
-          message: dialogMode === 'add' ? 'Usuario creado correctamente' : 'Usuario actualizado correctamente',
-          severity: 'success'
-        });
-      } else {
-        setSnackbar({
-          open: true,
-          message: 'Error al guardar usuario',
-          severity: 'error'
-        });
-      }
-    } catch (err) {
-      console.error('Error al conectar con el servidor:', err);
-      setSnackbar({
-        open: true,
-        message: 'Error al conectar con el servidor',
-        severity: 'error'
+  // Adaptar handleSaveUser para aceptar UserRequestDTO y convertir a User
+  const handleSaveUser = async (userData: import('../../types/auth').UserRequestDTO) => {
+    // Convertir UserRequestDTO a User (puedes ajustar según tus reglas de negocio)
+    const user: User = {
+      ...userData,
+      id: userData.id ?? 0,
+      rol: selectedUser?.rol || 'ROLE_ESTUDIANTE', // O usa el rol seleccionado en el formulario
+      activo: true, // O ajusta según lógica
+    };
+    if (dialogMode === 'add') {
+      createUser(user, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Usuario creado correctamente',
+            severity: 'success',
+          });
+          setOpenDialog(false);
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al crear usuario',
+            severity: 'error',
+          });
+        },
       });
-    } finally {
-      setLoading(false);
+    } else if (dialogMode === 'edit') {
+      updateUser(user, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Usuario actualizado correctamente',
+            severity: 'success',
+          });
+          setOpenDialog(false);
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al actualizar usuario',
+            severity: 'error',
+          });
+        },
+      });
     }
   };
 
@@ -343,14 +270,6 @@ const ManageUsers: React.FC = () => {
       </Box>
     );
   }
-
-  // Cargar usuarios al montar el componente y cuando cambie la pestaña
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    fetchUsers().then(r => r );
-    setPage(0);
-     
-  }, [fetchUsers, selectedTab]);
 
   return (
     <Box>
@@ -396,7 +315,7 @@ const ManageUsers: React.FC = () => {
           sx={{ mb: 3 }}
       />
 
-      {loading && (
+      {isLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
           <CircularProgress />
         </Box>
@@ -404,17 +323,17 @@ const ManageUsers: React.FC = () => {
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
+          {error.message}
         </Alert>
       )}
 
       {/* Mostrar la tabla solo cuando no está cargando */}
-  {!loading && (
+  {!isLoading && (
         <GenericTable
           columns={columns}
-          data={paginatedUsers} // Usar datos paginados
+          data={paginatedUsers}
           pagination={{
-            count: totalElements,
+            count: filteredUsers.length,
             rowsPerPage,
             page,
             onPageChange: handleChangePage,

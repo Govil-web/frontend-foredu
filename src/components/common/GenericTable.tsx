@@ -1,5 +1,5 @@
 // components/common/GenericTable.tsx
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   TableContainer,
   Table,
@@ -13,16 +13,16 @@ import {
   Theme,
 } from '@mui/material';
 
-interface Column {
+export interface Column {
   id: string;
   label: string;
   align?: 'left' | 'center' | 'right';
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
 }
 
 interface GenericTableProps {
   columns: Column[];
-  data: any[];
+  data: Record<string, unknown>[];
   pagination?: {
     count: number;
     rowsPerPage: number;
@@ -31,56 +31,106 @@ interface GenericTableProps {
     onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   };
   headerSx?: SxProps<Theme>;
+  containerSx?: SxProps<Theme>;
+  tableSx?: SxProps<Theme>;
 }
 
-export const GenericTable: React.FC<GenericTableProps> = ({
-  columns,
-  data,
-  pagination,
-  headerSx,
-}) => {
+const GenericTable: React.FC<GenericTableProps> = ({
+                                                     columns,
+                                                     data,
+                                                     pagination,
+                                                     headerSx,
+                                                     containerSx,
+                                                     tableSx,
+                                                   }) => {
+  const renderCell = useCallback((column: Column, row: Record<string, unknown>) => {
+    return column.render
+        ? column.render(row[column.id], row)
+        : row[column.id];
+  }, []);
+
+  const handlePageChange = useCallback((
+      event: React.MouseEvent<HTMLButtonElement> | null,
+      page: number
+  ) => {
+    pagination?.onPageChange(event, page);
+  }, [pagination]);
+
+  const handleRowsPerPageChange = useCallback((
+      event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    pagination?.onRowsPerPageChange(event);
+  }, [pagination]);
+
   return (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead sx={headerSx}>
-          <TableRow>
-            {columns.map((column) => (
-              <TableCell
-                key={column.id}
-                align={column.align || 'left'}
-                sx={{ color: 'white' }} // Letras blancas
-              >
-                {column.label}
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        
-        <TableBody>
-          {data.map((row, index) => (
-            <TableRow key={index}>
+      <TableContainer
+          component={Paper}
+          sx={{
+            boxShadow: 'none',
+            backgroundColor: 'transparent',
+            ...containerSx
+          }}
+      >
+        <Table sx={tableSx}>
+          <TableHead sx={headerSx}>
+            <TableRow>
               {columns.map((column) => (
-                <TableCell key={column.id} align={column.align}>
-                  {column.render 
-                    ? column.render(row[column.id], row) 
-                    : row[column.id]}
-                </TableCell>
+                  <TableCell
+                      key={column.id}
+                      align={column.align || 'left'}
+                      sx={{
+                        color: 'white',
+                        fontWeight: 600
+                      }}
+                  >
+                    {column.label}
+                  </TableCell>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      
-      {pagination && (
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          count={pagination.count}
-          rowsPerPage={pagination.rowsPerPage}
-          page={pagination.page}
-          onPageChange={pagination.onPageChange}
-          onRowsPerPageChange={pagination.onRowsPerPageChange}
-        />
-      )}
-    </TableContainer>
+          </TableHead>
+
+          <TableBody>
+            {data.map((row, index) => (
+                <TableRow
+                    key={(row.id as string) || `row-${index}`}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'action.hover',
+                      },
+                    }}
+                >
+                  {columns.map((column) => (
+                      <TableCell
+                          key={column.id}
+                          align={column.align || 'left'}
+                      >
+                        {renderCell(column, row)}
+                      </TableCell>
+                  ))}
+                </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        {pagination && (
+            <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}
+                count={pagination.count}
+                rowsPerPage={pagination.rowsPerPage}
+                page={pagination.page}
+                onPageChange={handlePageChange}
+                onRowsPerPageChange={handleRowsPerPageChange}
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                }}
+            />
+        )}
+      </TableContainer>
   );
 };
+
+// Exportación corregida (memo + default/named en un solo paso)
+const MemoizedGenericTable = React.memo(GenericTable);
+export { MemoizedGenericTable as GenericTable };
+export default MemoizedGenericTable;

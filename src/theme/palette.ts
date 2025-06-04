@@ -12,6 +12,20 @@ export const palette: PaletteOptions = {
     dark: '#C43C00',
     contrastText: '#FFFFFF',
   },
+
+  // Colores para los iconos de cursos
+  courseIcons: {
+    PRIMERO: { color: '#F8D449', bgColor: '#FFF8E1' },
+    SEGUNDO: { color: '#4E97F3', bgColor: '#E3F2FD' },
+    TERCERO: { color: '#66BB6A', bgColor: '#E8F5E9' },
+    CUARTO: { color: '#7E57C2', bgColor: '#EDE7F6' },
+    QUINTO: { color: '#FF5722', bgColor: '#FBE9E7' },
+    SEXTO: { color: '#26A69A', bgColor: '#E0F2F1' },
+    SEPTIMO: { color: '#FF7043', bgColor: '#FFEBEE' },
+    OCTAVO: { color: '#AB47BC', bgColor: '#F3E5F5' },
+    NOVENO: { color: '#FFCA28', bgColor: '#FFFDE7' },
+    DECIMO: { color: '#FF7043', bgColor: '#FFEBEE' },
+  },
   secondary: {
     main: '#262853', // Azul oscuro Foredu
     light: '#3E4178',

@@ -1,6 +1,6 @@
 // components/GenericTabs.tsx
 import { Paper, Tab, Tabs, Box } from '@mui/material';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 export interface TabOption {
     value: string;
@@ -17,7 +17,7 @@ interface GenericTabsProps {
     tabSx?: object;
 }
 
-export const GenericTabs: React.FC<GenericTabsProps> = ({
+const GenericTabsComponent: React.FC<GenericTabsProps> = ({
                                                      tabs,
                                                      selectedValue,
                                                      onChange,
@@ -25,9 +25,9 @@ export const GenericTabs: React.FC<GenericTabsProps> = ({
                                                      sx,
                                                      tabSx
                                                  }) => {
-    const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
+    const handleChange = useCallback((_event: React.SyntheticEvent, newValue: string) => {
         onChange(newValue);
-    };
+    }, [onChange]);
 
     return (
         <Paper sx={{
@@ -92,4 +92,5 @@ export const GenericTabs: React.FC<GenericTabsProps> = ({
     );
 };
 
+export const GenericTabs = React.memo(GenericTabsComponent);
 export default GenericTabs;

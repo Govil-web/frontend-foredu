@@ -11,7 +11,7 @@ import { LayoutProvider } from './contexts/LayoutContext';
 // Importar CSS global
 import './index.css';
 
-// Crear cliente de React Query
+// Crear cliente de React Query fuera del componente para evitar recreaciones
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -35,8 +35,9 @@ function App() {
       <ThemeProvider theme={foreduTheme}>
         <CssBaseline /> {/* Normaliza los estilos CSS */}
         <BrowserRouter>
-        <LayoutProvider><AppRoutes /></LayoutProvider>
-          
+          <LayoutProvider>
+            <AppRoutes />
+          </LayoutProvider>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
