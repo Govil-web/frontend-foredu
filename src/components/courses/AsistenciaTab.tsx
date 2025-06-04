@@ -1,34 +1,36 @@
-// src/components/grade/AsistenciaTab.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Button, Avatar, 
-  CircularProgress, Alert, Grid, Paper, Select, MenuItem, FormControl, InputLabel, TextField
+  Box, Typography, Button, CircularProgress, Alert, Paper, Checkbox, TextField, FormControlLabel
 } from '@mui/material';
 import { GenericTable } from '../common/GenericTable';
 import { estudianteService } from '../../services/api/estudianteService';
 import { asistenciaService } from '../../services/asistencia/asistenciaService';
-import { Estudiante } from '../../types'; 
+import { Estudiante } from '../../types';
 import { ApiAsistenciaDTO, TipoEstadoAsistencia, ApiAsistenciaRequest, BackendApiResponse } from '../../types';
 
-import SaveIcon from '@mui/icons-material/Save';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import SearchIcon from '@mui/icons-material/Search';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+// Components
+import { DailyAttendanceInput } from './components/DailyAttendanceInput';
+import { RangeSelector } from './components/RangeSelector';
+import { useAsistenciaState } from './hooks/useAsistenciaState';
+import { useAsistenciaHandlers } from './hooks/useAsistenciaHandlers';
+import { useAsistenciaPercentage, StudentAttendancePercentage } from './hooks/useAsistenciaPercentage';
+import { createRangeSummary } from './utils/asistenciaUtils';
 
-// ViewModel para el modo de ingreso diario
-interface StudentDailyInput {
+// Types
+export interface StudentDailyInput {
   studentId: number;
   nombreCompleto: string;
   avatarUrl?: string;
-  estado: TipoEstadoAsistencia;
-  justificativo?: string;
+  isPresent: boolean;
+  justificativo: string;
 }
 
-// ViewModel para la tabla de resumen del rango personalizado
-interface StudentRangeSummary {
+export interface StudentRangeSummary {
   studentId: number;
   nombreCompleto: string;
   avatarUrl?: string;
@@ -39,286 +41,494 @@ interface StudentRangeSummary {
   totalDiasEnRangoConRegistro: number;
 }
 
-const VALID_INPUT_ESTADOS: Exclude<TipoEstadoAsistencia, 'NO_REGISTRADA'>[] = [
-  'PRESENTE', 'AUSENTE', 'TARDE', 'JUSTIFICADO',
-];
+// Nueva interfaz unificada que combina porcentajes y datos de entrada
+export interface StudentUnifiedData {
+  studentId: number;
+  nombreCompleto: string;
+  avatarUrl?: string;
+  porcentajeAsistencia?: number;
+  totalPresente: number;
+  totalAusente: number;
+  totalTarde?: number;
+  totalJustificado?: number;
+  totalRegistros: number;
+  isPresent: boolean;
+  justificativo: string;
+}
 
+type ViewMode = 'input' | 'rangeView';
 
 interface AsistenciaTabProps {
   gradeId: number;
 }
 
 export const AsistenciaTab: React.FC<AsistenciaTabProps> = ({ gradeId }) => {
-  const [viewMode, setViewMode] = useState<'input' | 'rangeView'>('input');
-  const [rangeStartDate, setRangeStartDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
-  const [rangeEndDate, setRangeEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
-  const [rangeViewData, setRangeViewData] = useState<StudentRangeSummary[]>([]);
-  const [studentsForInput, setStudentsForInput] = useState<StudentDailyInput[]>([]);
-  const [allStudentsInGrade, setAllStudentsInGrade] = useState<Estudiante[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('input');
+  
+  const {
+    rangeStartDate,
+    setRangeStartDate,
+    rangeEndDate,
+    setRangeEndDate,
+    rangeViewData,
+    setRangeViewData,
+    studentsForInput,
+    setStudentsForInput,
+    allStudentsInGrade,
+    setAllStudentsInGrade,
+    loading,
+    setLoading,
+    error,
+    setError,
+    successMessage,
+    setSuccessMessage
+  } = useAsistenciaState();
 
-  const fetchAllStudentsForGrade = useCallback(async () => {
-    if (!gradeId) return;
-    console.log("AsistenciaTab: Iniciando fetchAllStudentsForGrade para gradeId:", gradeId);
-    setLoading(true); setError(null);
-    try {
-      const response = await estudianteService.obtenerPorGrado(gradeId);
-      console.log("AsistenciaTab: Respuesta de estudianteService.obtenerPorGrado:", response);
-      if (response.estado && response.data) {
-        setAllStudentsInGrade(response.data);
-      } else {
-        throw new Error(response.message || "No se pudieron cargar los estudiantes del grado.");
-      }
-    } catch (err: any) {
-      console.error("AsistenciaTab: Error en fetchAllStudentsForGrade:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [gradeId]);
+  const {
+    percentageData,
+    loading: percentageLoading,
+    error: percentageError,
+    fetchPercentageData
+  } = useAsistenciaPercentage();
 
+  const {
+    handleFetchStudents,
+    handleFetchCustomRangeData,
+    handleSubmitDailyAttendance
+  } = useAsistenciaHandlers({
+    gradeId,
+    rangeStartDate: rangeStartDate ? rangeStartDate.toISOString() : '',
+    rangeEndDate: rangeEndDate ? rangeEndDate.toISOString() : '',
+    studentsForInput,
+    setAllStudentsInGrade,
+    setRangeViewData,
+    setLoading,
+    setError,
+    setSuccessMessage
+  });
+
+  // Función para combinar datos de porcentajes con datos de entrada
+  const createUnifiedData = useCallback((): StudentUnifiedData[] => {
+    const unifiedData: StudentUnifiedData[] = [];
+
+    studentsForInput.forEach(student => {
+      // Buscar datos de porcentaje correspondientes
+      const percentageRecord = percentageData.find(p => p.studentId === student.studentId);
+      
+      unifiedData.push({
+        studentId: student.studentId,
+        nombreCompleto: student.nombreCompleto,
+        avatarUrl: student.avatarUrl,
+        porcentajeAsistencia: percentageRecord?.porcentajeAsistencia || 0,
+        totalPresente: percentageRecord?.totalPresente || 0,
+        totalAusente: percentageRecord?.totalAusente || 0,
+        totalTarde: 0,
+        //totalJustificado: percentageRecord?.totalJustificado || 0,
+        totalRegistros: percentageRecord?.totalRegistros || 0,
+        isPresent: student.isPresent,
+        justificativo: student.justificativo
+      });
+    });
+
+    return unifiedData;
+  }, [studentsForInput, percentageData]);
+
+  // Initialize students data when component mounts or gradeId changes
   useEffect(() => {
-    fetchAllStudentsForGrade();
-  }, [fetchAllStudentsForGrade]);
+    if (gradeId) {
+      handleFetchStudents();
+    }
+  }, [gradeId, handleFetchStudents]);
 
+  // Update students for input when switching to input mode
   useEffect(() => {
     if (viewMode === 'input' && allStudentsInGrade.length > 0) {
-      console.log("AsistenciaTab: Configurando studentsForInput basado en allStudentsInGrade:", allStudentsInGrade);
-      setStudentsForInput(allStudentsInGrade.map(s => {
-        if (!s) {
-          console.error("AsistenciaTab: Encontrado estudiante 'undefined' o 'null' en allStudentsInGrade durante el mapeo a studentsForInput.");
-          // Devolver un objeto placeholder o filtrar, pero esto indicaría un problema en fetchAllStudentsForGrade
-          return { studentId: 0, nombreCompleto: "Error Estudiante", avatarUrl: "", estado: 'NO_REGISTRADA', justificativo: "" };
-        }
-        return {
-          studentId: s.id,
-          nombreCompleto: `${s.nombre || ''} ${s.apellido || ''}`.trim(),
-          avatarUrl: s.avatarUrl,
-          estado: 'PRESENTE',
+      const inputStudents: StudentDailyInput[] = allStudentsInGrade
+        .filter(student => student && typeof student.id !== 'undefined')
+        .map(student => ({
+          studentId: student.id,
+          nombreCompleto: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
+          avatarUrl: student.avatarUrl,
+          isPresent: true,
           justificativo: ''
-        };
-      }));
+        }));
+      setStudentsForInput(inputStudents);
     }
-  }, [viewMode, allStudentsInGrade]);
+  }, [viewMode, allStudentsInGrade, setStudentsForInput]);
 
-  const handleFetchCustomRangeData = async () => {
-    if (!gradeId || !rangeStartDate || !rangeEndDate) {
-      setError("Por favor, seleccione una fecha de inicio y fin.");
-      return;
+  // Fetch percentage data when switching to input view (to show historical data)
+  useEffect(() => {
+    if (viewMode === 'input' && allStudentsInGrade.length > 0) {
+      fetchPercentageData(allStudentsInGrade);
     }
-    if (parseISO(rangeEndDate) < parseISO(rangeStartDate)) {
-        setError("La fecha de fin no puede ser anterior a la fecha de inicio.");
-        return;
-    }
+  }, [viewMode, allStudentsInGrade, fetchPercentageData]);
 
-    setLoading(true); setError(null); setSuccessMessage(null); setRangeViewData([]);
-    console.log(`AsistenciaTab: Iniciando handleFetchCustomRangeData para grado ${gradeId}, ${rangeStartDate} a ${rangeEndDate}`);
-    try {
-      const asistenciasApiRes: BackendApiResponse<ApiAsistenciaDTO> = await asistenciaService.getAsistenciasByDateAndGrado(
-        gradeId, rangeStartDate, rangeEndDate
-      );
-      console.log("AsistenciaTab: Respuesta de asistenciaService.getAsistenciasByDateAndGrado:", asistenciasApiRes);
-
-      if (asistenciasApiRes.estado) {
-        const attendanceRecords: ApiAsistenciaDTO[] = asistenciasApiRes.dataIterable || [];
-        console.log("AsistenciaTab: attendanceRecords extraídos:", attendanceRecords);
-
-        if (!Array.isArray(attendanceRecords)) {
-            console.error("AsistenciaTab: attendanceRecords NO es un array!", attendanceRecords);
-            throw new Error("Los datos de asistencia recibidos no tienen el formato esperado (no es un array).");
-        }
-
-        if (attendanceRecords.length === 0) {
-          setSuccessMessage(asistenciasApiRes.message || "No se encontraron registros de asistencia para el rango seleccionado.");
-          setRangeViewData([]);
-        } else {
-          const summaryMap = new Map<number, StudentRangeSummary>();
-          if (allStudentsInGrade.length === 0) {
-            console.warn("AsistenciaTab: allStudentsInGrade está vacío al procesar asistencias. El resumen podría estar incompleto.");
-          }
-          allStudentsInGrade.forEach(student => {
-            if (!student || typeof student.id === 'undefined') {
-                console.error("AsistenciaTab: Estudiante inválido en allStudentsInGrade al crear summaryMap:", student);
-                return; // Saltar este estudiante
-            }
-            summaryMap.set(student.id, {
-              studentId: student.id,
-              nombreCompleto: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
-              avatarUrl: student.avatarUrl,
-              totalPresente: 0, totalAusente: 0, totalTarde: 0, totalJustificado: 0,
-              totalDiasEnRangoConRegistro: 0,
-            });
-          });
-          
-          attendanceRecords.forEach((record, index) => {
-            console.log(`AsistenciaTab: Procesando record [${index}]:`, record);
-            if (!record) {
-              console.error(`AsistenciaTab: Record en índice ${index} es undefined/null.`);
-              return; // Saltar este record
-            }
-            // Usar 'estudiante' como viene del JSON (que es ApiAsistenciaDTO.estudiante)
-            if (typeof record.estudiante === 'undefined' || record.estudiante === null) {
-              console.error(`AsistenciaTab: Record en índice ${index} no tiene ID de estudiante (record.estudiante es undefined/null):`, record);
-              return; // Saltar
-            }
-            if (typeof record.estado !== 'string') {
-              console.error(`AsistenciaTab: Record en índice ${index} no tiene propiedad 'estado' o no es string:`, record);
-              return; // Saltar
-            }
-
-            const summary = summaryMap.get(record.estudiante);
-            if (summary) {
-              summary.totalDiasEnRangoConRegistro++;
-              switch (record.estado.toUpperCase() as TipoEstadoAsistencia) {
-                case 'PRESENTE': summary.totalPresente++; break;
-                case 'AUSENTE': summary.totalAusente++; break;
-                case 'TARDE': summary.totalTarde++; break;
-                case 'JUSTIFICADO':
-                  summary.totalJustificado++; break;
-                default:
-                  console.warn(`AsistenciaTab: Estado desconocido '${record.estado}' en record:`, record);
-              }
-            } else {
-              console.warn(`AsistenciaTab: Estudiante con ID ${record.estudiante} de record de asistencia no encontrado en summaryMap (lista de estudiantes del grado). Record:`, record);
-            }
-          });
-          setRangeViewData(Array.from(summaryMap.values()));
-        }
-      } else {
-        throw new Error(asistenciasApiRes.message || 'Error al cargar asistencias para el rango (estado false).');
-      }
-    } catch (err: any) {
-      console.error("AsistenciaTab: Error en handleFetchCustomRangeData catch:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Columnas para la vista de rango (sin cambios)
   const rangeViewColumns = [
-    { id: 'nombreCompleto', label: 'Nombre', render: (_v: any, r: StudentRangeSummary) => (<Box sx={{ display: 'flex', alignItems: 'center', minWidth: 180 }}><Avatar src={r.avatarUrl} sx={{ width: 32, height: 32, mr: 1.5 }}>{r.nombreCompleto?.[0]}</Avatar><Typography variant="body2">{r.nombreCompleto}</Typography></Box>) },
-    { id: 'totalPresente', label: 'Presentes', align: 'center' as const, render: (v:number) => v },
-    { id: 'totalAusente', label: 'Ausentes', align: 'center' as const, render: (v:number) => v },
-    { id: 'totalTarde', label: 'Tardes', align: 'center' as const, render: (v:number) => v },
-    { id: 'totalJustificado', label: 'Justificadas', align: 'center' as const, render: (v:number) => v },
-    { id: 'totalDiasEnRangoConRegistro', label: 'Días c/Registro', align: 'center' as const, render: (v:number) => v },
+    {
+      id: 'nombreCompleto',
+      label: 'Nombre',
+      render: (_v: any, r: StudentRangeSummary) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 180 }}>
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              backgroundColor: r.avatarUrl ? 'transparent' : '#1976d2',
+              backgroundImage: r.avatarUrl ? `url(${r.avatarUrl})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              mr: 1.5
+            }}
+          >
+            {!r.avatarUrl && r.nombreCompleto?.[0]}
+          </Box>
+          <Typography variant="body2">{r.nombreCompleto}</Typography>
+        </Box>
+      )
+    },
+    { id: 'totalPresente', label: 'Presentes', align: 'center' as const, render: (v: number) => v },
+    { id: 'totalAusente', label: 'Ausentes', align: 'center' as const, render: (v: number) => v },
+    { id: 'totalTarde', label: 'Tardes', align: 'center' as const, render: (v: number) => v },
+    { id: 'totalJustificado', label: 'Justificadas', align: 'center' as const, render: (v: number) => v },
+    { id: 'totalDiasEnRangoConRegistro', label: 'Días c/Registro', align: 'center' as const, render: (v: number) => v }
   ];
 
-  const handleStudentStatusChange = (studentId: number, newStatus: TipoEstadoAsistencia) => { /* ... (igual) ... */
-    setStudentsForInput(prev => prev.map(s => s.studentId === studentId ? { ...s, estado: newStatus } : s));
-  };
-  const handleStudentJustificativoChange = (studentId: number, newJustificativo: string) => {  /* ... (igual) ... */
-    setStudentsForInput(prev => prev.map(s => s.studentId === studentId ? { ...s, justificativo: newJustificativo } : s));
-  };
-  const handleSubmitDailyAttendance = async () => { /* ... (igual que antes) ... */
-    if (!gradeId || studentsForInput.length === 0) return;
-    setLoading(true); setError(null); setSuccessMessage(null);
-    const asistenciaPayload: Record<number, string> = {};
-    studentsForInput.forEach(s => { asistenciaPayload[s.studentId] = s.estado; });
-    const request: ApiAsistenciaRequest = { gradoId: gradeId, asistencia: asistenciaPayload };
-    try {
-      const response = await asistenciaService.addAsistencia(request);
-      if (response.estado) {
-        setSuccessMessage(response.message || "Asistencia guardada con éxito.");
-      } else { throw new Error(response.message || "Error al guardar la asistencia."); }
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
-  };
+  // Nueva columna unificada que combina porcentajes y entrada diaria
+  const unifiedInputColumns = [
+    {
+      id: 'nombreCompleto',
+      label: 'Nombre',
+      render: (_v: any, r: StudentUnifiedData) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 180 }}>
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              backgroundColor: r.avatarUrl ? 'transparent' : '#1976d2',
+              backgroundImage: r.avatarUrl ? `url(${r.avatarUrl})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              mr: 1.5
+            }}
+          >
+            {!r.avatarUrl && r.nombreCompleto?.[0]}
+          </Box>
+          <Typography variant="body2">{r.nombreCompleto}</Typography>
+        </Box>
+      )
+    },
+    {
+      id: 'porcentajeAsistencia',
+      label: 'Asistencia %',
+      align: 'center' as const,
+      render: (percentage: number = 0) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 'bold',
+              color: percentage >= 90 ? '#4caf50' : percentage >= 70 ? '#ff9800' : '#f44336'
+            }}
+          >
+            {percentage}%
+          </Typography>
+        </Box>
+      )
+    },
+    {
+      id: 'totalPresente',
+      label: 'Presentes',
+      align: 'center' as const,
+      render: (v: number = 0) => (
+        <Typography variant="body2" sx={{ color: '#4caf50' }}>
+          {v}
+        </Typography>
+      )
+    },
+    {
+      id: 'totalAusente',
+      label: 'Ausentes',
+      align: 'center' as const,
+      render: (v: number = 0) => (
+        <Typography variant="body2" sx={{ color: '#f44336' }}>
+          {v}
+        </Typography>
+      )
+    },
+    {
+      id: 'totalRegistros',
+      label: 'Total',
+      align: 'center' as const,
+      render: (v: number = 0) => (
+        <Typography variant="body2">
+          {v}
+        </Typography>
+      )
+    },
+    {
+      id: 'isPresent',
+      label: 'Presente',
+      align: 'center' as const,
+      render: (isPresent: boolean, r: StudentUnifiedData) => {
+        const hasJustification = r.justificativo && r.justificativo.trim() !== '';
+        return (
+          <Box sx={{ position: 'relative', display: 'inline-block' }}>
+            <Checkbox
+              checked={isPresent && !hasJustification}
+              onChange={(e) => {
+                const updatedStudents = studentsForInput.map(s =>
+                  s.studentId === r.studentId 
+                    ? { ...s, isPresent: e.target.checked, justificativo: e.target.checked ? '' : s.justificativo }
+                    : s
+                );
+                setStudentsForInput(updatedStudents);
+              }}
+              sx={{
+                color: hasJustification ? '#f44336' : '#1976d2',
+                '&.Mui-checked': {
+                  color: hasJustification ? '#f44336' : '#4caf50',
+                }
+              }}
+            />
+            {hasJustification && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  color: '#f44336',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  pointerEvents: 'none',
+                  zIndex: 1
+                }}
+              >
+                ✗
+              </Box>
+            )}
+          </Box>
+        );
+      }
+    },
+    {
+      id: 'justificativo',
+      label: 'Justificación',
+      align: 'left' as const,
+      render: (justificativo: string, r: StudentUnifiedData) => (
+        <TextField
+          size="small"
+          value={justificativo || ''}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            const updatedStudents = studentsForInput.map(s =>
+              s.studentId === r.studentId 
+                ? { 
+                    ...s, 
+                    justificativo: newValue,
+                    isPresent: newValue.trim() === '' ? s.isPresent : false
+                  }
+                : s
+            );
+            setStudentsForInput(updatedStudents);
+          }}
+          placeholder="Ingrese justificación si está ausente"
+          sx={{ 
+            minWidth: 200,
+            '& .MuiInputBase-input': {
+              fontSize: '13px'
+            }
+          }}
+        />
+      )
+    }
+  ];
 
-  // --- Renderizado Principal ---
+  const isLoading = loading || percentageLoading;
+  const currentError = error || percentageError;
+
   return (
     <Box>
-      {/* ... (Botones de cambio de modo) ... */}
+      {/* Mode Toggle Buttons */}
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-        <Button variant={viewMode === 'input' ? "contained" : "outlined"} startIcon={<EditNoteIcon />} onClick={() => setViewMode('input')}>
+        <Button
+          variant={viewMode === 'input' ? "contained" : "outlined"}
+          startIcon={<EditNoteIcon />}
+          onClick={() => setViewMode('input')}
+        >
           Registrar Asistencia Diaria
         </Button>
-        <Button variant={viewMode === 'rangeView' ? "contained" : "outlined"} startIcon={<ListAltIcon />} onClick={() => { setViewMode('rangeView'); setRangeViewData([]); /* Limpiar datos anteriores */ }}>
+        <Button
+          variant={viewMode === 'rangeView' ? "contained" : "outlined"}
+          startIcon={<ListAltIcon />}
+          onClick={() => {
+            setViewMode('rangeView');
+            setRangeViewData([]);
+          }}
+        >
           Consultar por Rango
         </Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {/* Messages */}
+      {currentError && <Alert severity="error" sx={{ mb: 2 }}>{currentError}</Alert>}
       {successMessage && <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>}
-      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}><CircularProgress /></Box>}
+       {/* {isLoading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress />
+        </Box>
+      )} */}
+     
 
-      {/* --- VISTA MODO INPUT --- */}
+      {/* Daily Input View con tabla unificada */}
       {!loading && viewMode === 'input' && (
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Registrar Asistencia para Hoy ({format(new Date(), "dd/MM/yyyy", { locale: es })})
-          </Typography>
-          <Grid container spacing={2} alignItems="center" sx={{mt: 1}}>
-            {studentsForInput.map((student, studentIndex) => {
-              // LOGGING: Verificar cada student antes de usarlo
-              if (!student) {
-                console.error(`AsistenciaTab: student en índice ${studentIndex} de studentsForInput es undefined.`);
-                return <Grid item xs={12} key={`error-${studentIndex}`}><Alert severity="error">Error al cargar datos de un estudiante.</Alert></Grid>;
-              }
-              if (typeof student.estado !== 'string') {
-                  console.error(`AsistenciaTab: student.estado NO es string para ${student.nombreCompleto} (ID: ${student.studentId}). Estado:`, student.estado);
-                  // Podrías asignar un estado por defecto o manejarlo
-              }
-              // console.log(`AsistenciaTab: Renderizando input para ${student.nombreCompleto}, estado: ${student.estado}`);
-              return (
-              <React.Fragment key={student.studentId || `student-error-${studentIndex}`}>
-                <Grid item xs={12} sm={1} sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Avatar src={student.avatarUrl} alt={student.nombreCompleto} sx={{ width: 40, height: 40}}>
-                        {student.nombreCompleto?.[0]}
-                    </Avatar>
-                </Grid>
-                <Grid item xs={12} sm={4} md={3}> <Typography>{student.nombreCompleto}</Typography> </Grid>
-                <Grid item xs={12} sm={3} md={3}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id={`estado-label-${student.studentId}`}>Estado</InputLabel>
-                    <Select
-                      labelId={`estado-label-${student.studentId}`}
-                      value={student.estado || 'NO_REGISTRADA'} // Fallback si student.estado fuera undefined
-                      label="Estado"
-                      onChange={(e) => handleStudentStatusChange(student.studentId, e.target.value as TipoEstadoAsistencia)}
-                    >
-                      {VALID_INPUT_ESTADOS.map(estadoOpt => (
-                        <MenuItem key={estadoOpt} value={estadoOpt}>{estadoOpt.replace(/_/g, ' ').toLowerCase()}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={4} md={5}>
-                    {student.estado && (student.estado.includes('AUSENTE') || student.estado.includes('TARDE')) && (
-                        <TextField fullWidth size="small" label="Justificativo (Opcional)" value={student.justificativo || ''} onChange={(e) => handleStudentJustificativoChange(student.studentId, e.target.value)} />
-                    )}
-                </Grid>
-              </React.Fragment>
-            );
-           })}
-          </Grid>
-          <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSubmitDailyAttendance} disabled={loading || studentsForInput.length === 0} sx={{ mt: 3, float: 'right' }}>
-            Guardar Asistencia del Día
-          </Button>
+      
+          {/* Loading para porcentajes mientras se cargan */}
+          {percentageLoading && (
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Cargando datos de asistencia...
+              </Typography>
+              <CircularProgress size={20} sx={{ ml: 1 }} />
+            </Box>
+          )}
+
+          {/* Tabla unificada que combina porcentajes históricos y entrada diaria */}
+          {studentsForInput.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+                  Registro de Asistencia - Histórico y Actual ({format(new Date(), "dd/MM/yyyy", { locale: es })})
+                </Typography>
+                
+                {/* Controles de selección masiva */}
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="success"
+                    onClick={() => {
+                      const updatedStudents = studentsForInput.map(s => ({
+                        ...s,
+                        isPresent: true,
+                        justificativo: ''
+                      }));
+                      setStudentsForInput(updatedStudents);
+                    }}
+                    sx={{ fontSize: '12px', minWidth: 100 }}
+                  >
+                    Todos Presentes
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    onClick={() => {
+                      const updatedStudents = studentsForInput.map(s => ({
+                        ...s,
+                        isPresent: false,
+                        justificativo: s.justificativo || ''
+                      }));
+                      setStudentsForInput(updatedStudents);
+                    }}
+                    sx={{ fontSize: '12px', minWidth: 100 }}
+                  >
+                    Todos Ausentes
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      const updatedStudents = studentsForInput.map(s => ({
+                        ...s,
+                        isPresent: true,
+                        justificativo: ''
+                      }));
+                      setStudentsForInput(updatedStudents);
+                    }}
+                    sx={{ fontSize: '12px', minWidth: 80 }}
+                  >
+                    Limpiar Todo
+                  </Button>
+                </Box>
+              </Box>
+              
+              <GenericTable
+                columns={unifiedInputColumns}
+                data={createUnifiedData()}
+                headerSx={{ backgroundColor: '#3A4F7F' }}
+              />
+              
+              {/* Botón para enviar la asistencia diaria */}
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  onClick={() => handleSubmitDailyAttendance()}
+                  disabled={loading}
+                  sx={{ minWidth: 200 }}
+                >
+                  {loading ? <CircularProgress size={24} /> : 'Guardar Asistencia del Día'}
+                </Button>
+              </Box>
+            </Box>
+          )}
+
+          {/* Mantener el componente original como respaldo */}
+          <Box sx={{ display: 'none' }}>
+            <DailyAttendanceInput
+              students={studentsForInput}
+              onStudentsChange={setStudentsForInput}
+              onSubmit={handleSubmitDailyAttendance}
+              loading={loading}
+            />
+          </Box>
         </Paper>
       )}
 
-      {/* --- VISTA MODO RANGO --- */}
-      {!loading && viewMode === 'rangeView' && (
+      {/* Range View (sin cambios) */}
+      {!isLoading && viewMode === 'rangeView' && (
         <Paper sx={{ p: 2 }}>
-          {/* ... (Inputs de Fecha y Botón Buscar como antes) ... */}
-          <Typography variant="h6" gutterBottom>Consultar Asistencia por Rango de Fechas</Typography>
-          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={5}>
-              <TextField fullWidth type="date" label="Fecha Inicio" value={rangeStartDate} onChange={(e) => setRangeStartDate(e.target.value)} InputLabelProps={{ shrink: true }} size="small"/>
-            </Grid>
-            <Grid item xs={12} sm={5}>
-              <TextField fullWidth type="date" label="Fecha Fin" value={rangeEndDate} onChange={(e) => setRangeEndDate(e.target.value)} InputLabelProps={{ shrink: true }} size="small"/>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <Button fullWidth variant="contained" startIcon={<SearchIcon />} onClick={handleFetchCustomRangeData} disabled={loading}> Buscar </Button>
-            </Grid>
-          </Grid>
+          <Typography variant="h6" gutterBottom>
+            Consultar Asistencia por Rango de Fechas
+          </Typography>
+          <RangeSelector
+            startDate={rangeStartDate ? rangeStartDate.toISOString() : ''}
+            endDate={rangeEndDate ? rangeEndDate.toISOString() : ''}
+            onStartDateChange={(dateStr: string) => setRangeStartDate(dateStr ? new Date(dateStr) : null)}
+            onEndDateChange={(dateStr: string) => setRangeEndDate(dateStr ? new Date(dateStr) : null)}
+            onSearch={handleFetchCustomRangeData}
+            loading={loading}
+          />
           {rangeViewData.length > 0 ? (
-            <GenericTable columns={rangeViewColumns} data={rangeViewData} headerSx={{ backgroundColor: '#3A4F7F' }} />
+            <GenericTable
+              columns={rangeViewColumns}
+              data={rangeViewData}
+              headerSx={{ backgroundColor: '#3A4F7F' }}
+            />
           ) : (
-            !error && !successMessage && studentsForInput.length > 0 && <Typography sx={{textAlign: 'center', mt: 2}}>Seleccione un rango y presione "Buscar", o si acaba de buscar y no hay resultados, se mostrará un mensaje.</Typography>
+            !error && !successMessage && (
+              <Typography sx={{ textAlign: 'center', mt: 2 }}>
+                Seleccione un rango y presione "Buscar"
+              </Typography>
+            )
           )}
         </Paper>
       )}
@@ -326,4 +536,4 @@ export const AsistenciaTab: React.FC<AsistenciaTabProps> = ({ gradeId }) => {
   );
 };
 
- export default AsistenciaTab;
+export default AsistenciaTab;

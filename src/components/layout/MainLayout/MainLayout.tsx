@@ -13,6 +13,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import AppHeader from '../Header/AppHeader';
 import Sidebar from '../Sidebar/Sidebar';
 import drawerWidth from '../Sidebar/constants';
+import { Course } from '../../../types'; // Asegúrate de que este tipo esté definido correctamente
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
   open?: boolean;
@@ -66,9 +67,10 @@ const MainContentDecoration2 = styled(Box)(({ theme }) => ({
 
 interface MainLayoutProps {
   children: React.ReactNode;
+  gradeDetails?: Course;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ children, gradeDetails }) => {
   const { user, logout } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -106,6 +108,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         user={user}
         logout={logout}
         handleDrawerOpen={handleDrawerOpen}
+         gradeDetails={gradeDetails ? { 
+          gradoNombre: gradeDetails.curso 
+        } : undefined}
       />
       
       {/* Componente Sidebar extraído */}

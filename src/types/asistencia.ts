@@ -81,3 +81,19 @@ export interface ApiAsistenciaDiariaDTO {
   porcentajeAsistencia?: number; // Podría ser el % general del grado hasta esa fecha
   nombreGrado?: string; // Nombre del grado asociado a este registro
 }
+export interface AsistenciaResponse {
+  id: number;
+  fecha: string;
+  justificativos: string;
+  porcentajeAsistencia: number;
+  nombreEstudiante: string;
+  estado: string;
+  estudiante: number;
+  grado: number;
+}
+
+export interface ApiAsistenciaResponse {
+  estado: boolean;
+  message: string;
+  data: AsistenciaResponse[];
+}

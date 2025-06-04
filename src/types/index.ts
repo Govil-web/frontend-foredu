@@ -17,7 +17,7 @@ export type {
 export type {
 ApiAsistenciaDTO, ApiDetalleAsistenciaByAlumno, TipoEstadoAsistencia, 
 ApiAsistenciaRequest, ApiAsistenciaUpdateRequestDto,BackendApiResponse, 
-ApiAsistenciaDiariaDTO
+ApiAsistenciaDiariaDTO, AsistenciaResponse, ApiAsistenciaResponse
 } from './asistencia';
 
 export interface ApiResponse<T> {

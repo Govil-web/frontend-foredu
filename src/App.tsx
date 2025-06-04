@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import foreduTheme from './theme';
 import AppRoutes from './routes/AppRoutes';
 import { useAuthStore } from './store/authStore';
+import { LayoutProvider } from './contexts/LayoutContext';
 
 // Importar CSS global
 import './index.css';
@@ -34,7 +35,8 @@ function App() {
       <ThemeProvider theme={foreduTheme}>
         <CssBaseline /> {/* Normaliza los estilos CSS */}
         <BrowserRouter>
-          <AppRoutes />
+        <LayoutProvider><AppRoutes /></LayoutProvider>
+          
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

@@ -1,5 +1,5 @@
 // components/GenericTabs.tsx
-import { Paper, Tab, Tabs } from '@mui/material';
+import { Paper, Tab, Tabs, Box } from '@mui/material';
 import React from 'react';
 
 export interface TabOption {
@@ -32,11 +32,20 @@ export const GenericTabs: React.FC<GenericTabsProps> = ({
     return (
         <Paper sx={{
             boxShadow: 'none',
-            borderBottom: '1px solid',
-            borderColor: 'grey.400',
             backgroundColor: 'transparent',
+            position: 'relative',
             ...sx
         }}>
+             {/* Línea divisora completa */}
+            <Box sx={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                borderBottom: '1px solid',
+                borderColor: 'grey.400',
+                zIndex: 1, // Debajo del indicador
+            }} />
             <Tabs
                 value={selectedValue}
                 onChange={handleChange}
@@ -47,9 +56,12 @@ export const GenericTabs: React.FC<GenericTabsProps> = ({
                 aria-label={ariaLabel}
                 sx={{
                     minHeight: 48,
+                    position: 'relative',
+                    zIndex: 2,
                     '& .MuiTabs-indicator': {
                         backgroundColor: 'grey.600',
-                        height: '2px'
+                        height: '2px',
+                        zIndex: 3
                     },
                     '& .MuiTab-root': {
                         textTransform: 'none',

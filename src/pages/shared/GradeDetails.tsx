@@ -1,20 +1,29 @@
 // pages/admin/GradeDetails.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, CircularProgress, Alert } from '@mui/material';// Loading podría no ser necesario aquí si las pestañas manejan su propia carga
+import { 
+  Box, 
+  Typography, 
+  CircularProgress, 
+  Alert 
+} from '@mui/material';
 import { courseService } from '../../services/courses/courseService';
-import { Course } from '../../types'; // Tu tipo Course
+import { Course } from '../../types';
 import { GenericTabs } from '../../components/common/GenericTabs';
 import { ComunicacionesTab } from '../../components/courses/ComunicacionesTab';
 import { AsistenciaTab } from '../../components/courses/AsistenciaTab';
+import { useLayout } from '../../contexts/LayoutContext';
 
 const GradeDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [selectedTab, setSelectedTab] = useState('asistencia');
-    const [gradeDetails, setGradeDetails] = useState<Course | null>(null); // Usar tu tipo Course
+    const [gradeDetails, setGradeDetails] = useState<Course | null>(null);
     const [loadingGrade, setLoadingGrade] = useState(true);
     const [errorGrade, setErrorGrade] = useState<string | null>(null);
+    
+    // Usa el contexto de layout para actualizar el encabezado
+    const { setHeaderGrade } = useLayout();
 
     const numericGradeId = id ? Number(id) : null;
 
@@ -23,18 +32,18 @@ const GradeDetails: React.FC = () => {
             if (!numericGradeId) {
                 setErrorGrade("ID de grado no válido.");
                 setLoadingGrade(false);
-                // Considera redirigir o mostrar un mensaje más prominente
-                // navigate('/admin/courses'); 
                 return;
             }
             setLoadingGrade(true);
             setErrorGrade(null);
             try {
-                // Asumo que courseService.getById devuelve una estructura que tiene `data` como el objeto Course
-                // y `estado` para indicar éxito/fallo
                 const response = await courseService.getById(numericGradeId);
-                if (response.estado && response.data) { // Ajusta según la estructura de tu ApiResponse<Course>
+                if (response.estado && response.data) {
                     setGradeDetails(response.data);
+                    // Actualiza el encabezado con los detalles del grado
+                    setHeaderGrade({
+                        gradoNombre: response.data.curso || response.data.aula
+                    });
                 } else {
                     throw new Error(response.message || 'No se pudieron cargar los detalles del grado.');
                 }
@@ -47,7 +56,12 @@ const GradeDetails: React.FC = () => {
         };
 
         fetchGradeDetails();
-    }, [numericGradeId, navigate]); // Dependencia de numericGradeId
+        
+        // Limpiar al desmontar
+        return () => {
+            setHeaderGrade(null);
+        };
+    }, [numericGradeId, navigate, setHeaderGrade]);
 
     const orderedTabs = [
         { value: 'asistencia', label: 'Asistencia' },
@@ -67,34 +81,63 @@ const GradeDetails: React.FC = () => {
     if (errorGrade) return <Alert severity="error" sx={{m:3}}>{errorGrade}</Alert>;
     if (!gradeDetails || !numericGradeId) return <Alert severity="warning" sx={{m:3}}>No se encontraron detalles para el grado especificado.</Alert>;
 
-
     return (
-        <Box sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ mb: 1 }}>
-                {/* Asumiendo que gradeDetails (Course) tiene una propiedad 'nombre' o 'name' */}
-                Grado: {gradeDetails?.curso || `ID ${gradeDetails?.id}`} 
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, backgroundColor: '#f0f0f0', p: 1, borderRadius: 1 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                    {/* Esto debería venir de gradeDetails o un contexto, ej. gradeDetails.profesorAsignado?.nombre */}
-                    Profesora: {gradeDetails?.profesorNombre || 'No asignado'} 
-                </Typography>
+        <Box sx={{ p: 1 , marginTop:-5}}>
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                mb: 3, 
+                overflow: 'hidden',
+            }}>
+                <Box sx={{ 
+                    position: 'relative', 
+                    borderBottom: '1px solid', 
+                    borderColor: 'grey.400',
+                    mb: 1,
+                }}>
+                    <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        position: 'relative',
+                        zIndex: 2,
+                    }}>
+                        <GenericTabs
+                            tabs={orderedTabs}
+                            selectedValue={selectedTab}
+                            onChange={setSelectedTab}
+                            sx={{ 
+                                mb: 0,
+                                '& .MuiTabs-indicator': {
+                                    zIndex: 3,
+                                }
+                            }}
+                        />
+                        
+                        <Typography 
+                            variant="body1" 
+                            sx={{ 
+                                fontWeight: 'medium',
+                                ml: 2,
+                                backgroundColor: 'transparent',
+                                position: 'relative',
+                                zIndex: 2,
+                                fontSize:'15px',
+                                color: '#383838',
+                            }}
+                        >
+                            Profesor: {gradeDetails?.profesorNombre || 'No asignado'} 
+                        </Typography>
+                    </Box>
+                </Box>
             </Box>
-
-            <GenericTabs
-                tabs={orderedTabs}
-                selectedValue={selectedTab}
-                onChange={setSelectedTab}
-                sx={{ mb: 3 }}
-            />
-
+            
             {selectedTab === 'asistencia' && numericGradeId && (
                 <AsistenciaTab gradeId={numericGradeId} />
             )}
 
             {selectedTab === 'comunicaciones' && numericGradeId && (
-                 // Pasa el gradeId si ComunicacionesTab lo necesita para filtrar o guardar
-                <ComunicacionesTab /* gradeId={numericGradeId} */ />
+                <ComunicacionesTab />
             )}
 
             {selectedTab === 'calendario' && (

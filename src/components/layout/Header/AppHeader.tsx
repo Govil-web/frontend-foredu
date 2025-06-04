@@ -1,6 +1,6 @@
 // src/components/AppHeader.tsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     AppBar,
     Toolbar,
@@ -23,11 +23,13 @@ import {
 } from '@mui/icons-material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { User } from '../../../types';
-import { styleUtils } from '../../../utils/styleUtils.ts';
-import { getAppTitle, menuText } from '../../../utils/appTextUtils.ts';
+import { styleUtils } from '../../../utils/styleUtils';
+import { getAppTitle, getGradeName, menuText } from '../../../utils/appTextUtils';
 import CircleIconButton from '../../common/CircleIconButton';
 import Separator from '../../common/Separator';
 import AvatarAdmin from '../../../assets/avatar-admin.png';
+import { useLayout } from '../../../contexts/LayoutContext';
+
 
 interface AppHeaderProps {
     open: boolean;
@@ -35,17 +37,21 @@ interface AppHeaderProps {
     user: User | null;
     logout: () => Promise<void>;
     handleDrawerOpen: () => void;
+    gradeDetails?: { gradoNombre?: string };
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
-                                                 open,
-                                                 drawerWidth,
-                                                 user,
-                                                 logout,
-                                                 handleDrawerOpen,
-                                             }) => {
+    open,
+    drawerWidth,
+    user,
+    logout,
+    handleDrawerOpen,
+    gradeDetails,
+}) => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const { headerGrade } = useLayout();
+    const location = useLocation();
 
     const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
@@ -69,6 +75,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         stroke: theme.palette.grey[400],
         strokeWidth: 1.5
     };
+
+    const currentGradeName = headerGrade?.gradoNombre || 
+                           gradeDetails?.gradoNombre || 
+                           getGradeName(gradeDetails);
+    
+    const isGradeRoute = location.pathname.includes('/grados/');
 
     return (
         <AppBar
@@ -108,22 +120,55 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                     <MenuIcon />
                 </IconButton>
 
-                <Typography
-                    variant="h6"
-                    noWrap
-                    sx={{
-                        flexGrow: 1,
-                        zIndex: 1,
-                        ...styleUtils.gradientText(
-                            theme,
-                            theme.palette.text.secondary,
-                        )
-                    }}
-                >
-                    {getAppTitle(user?.role)}
-                </Typography>
+                {/* Contenedor para título y grado */}
+                <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    flexGrow: 1,
+                    overflow: 'hidden',
+                    maxWidth: 'calc(100% - 200px)',
+                }}>
+                    <Typography
+                        variant="h6"
+                        noWrap
+                        sx={{
+                            zIndex: 1,
+                            ...styleUtils.gradientText(
+                                theme,
+                                theme.palette.text.secondary,
+                            ),
+                            lineHeight: 1.2,
+                            fontSize: { xs: '1rem', sm: '1.25rem' }
+                        }}
+                    >
+                        {getAppTitle(user?.role)}
+                    </Typography>
+                    
+                    {isGradeRoute && currentGradeName && (
+                        <Typography 
+                            variant="subtitle2"
+                            sx={{
+                                color: theme.palette.grey[600],
+                                fontWeight: 'medium',
+                                mt: 0.5,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                lineHeight: 1.2,
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                            }}
+                        >
+                            {currentGradeName}
+                        </Typography>
+                    )}
+                </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center',  gap: 3, overflow: 'hidden', }}>
+                <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center',  
+                    gap: 3, 
+                    overflow: 'hidden',
+                }}>
                     <CircleIconButton
                         tooltipTitle={menuText.help}
                         icon={<SearchRounded sx={iconStyles} />}
@@ -139,14 +184,15 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                     <Tooltip title={menuText.profileSettings}>
                         <IconButton
                             onClick={handleOpenUserMenu}
-                            sx={{ p: 0,
+                            sx={{ 
+                                p: 0,
                                 position: 'relative',
                                 '&:hover .dropdown-arrow': {
                                     color: 'primary.main'
-                                }}}
+                                }
+                            }}
                             disableRipple
                         >
-
                             <Avatar
                                 alt={user?.nombre}
                                 src={AvatarAdmin}
