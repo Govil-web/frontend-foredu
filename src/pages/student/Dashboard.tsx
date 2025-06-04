@@ -1,5 +1,5 @@
 // src/pages/student/Dashboard.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -13,7 +13,11 @@ import {
   Divider,
   LinearProgress,
   Chip,
-  Avatar
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  Avatar,
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon,

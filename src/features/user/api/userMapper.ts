@@ -1,18 +1,4 @@
-import { UserRequestDTO, UserResponseDTO } from '../types/auth';
-
-// Modelo de dominio (puedes expandirlo si necesitas lógica extra)
-export interface User {
-  id: number;
-  nombre: string;
-  apellido: string;
-  email: string;
-  rol: string;
-  activo: boolean;
-  dni: string;
-  tipoDocumento: string;
-  telefono: string;
-  institucion: string;
-}
+import { User, UserRequestDTO, UserResponseDTO } from '../types';
 
 export const userMapper = {
   fromApi: (apiUser: UserResponseDTO): User => ({

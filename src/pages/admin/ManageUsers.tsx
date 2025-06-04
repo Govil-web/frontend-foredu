@@ -17,6 +17,8 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -25,23 +27,25 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { useUsers } from '../../hooks/useUsers';
-import { useCreateUser } from '../../hooks/useCreateUser';
-import { useUpdateUser } from '../../hooks/useUpdateUser';
-import { useDeleteUser } from '../../hooks/useDeleteUser';
-import { User } from '../../mappers/userMapper';
-import UserForm from '../../components/admin/UserForm';
 import { useAuth } from '../../hooks/useAuth';
 import GenericTabs from '../../components/common/GenericTabs.tsx';
 import { GenericTable } from '../../components/common/GenericTable';
-import { useStudents } from '../../hooks/useStudents';
-
-// Adaptar User a Record<string, unknown> para la tabla
-type UserRow = Record<string, unknown>;
+import { UserTable } from '../../features/user/ui/UserTable';
+import UserForm from '../../features/user/ui/UserForm';
+import { useCreateUser } from '../../features/user/model/useCreateUser';
+import { useUpdateUser } from '../../features/user/model/useUpdateUser';
+import { useDeleteUser } from '../../features/user/model/useDeleteUser';
+import { User, UserRequestDTO, UserResponseDTO } from '../../features/user/types';
+import { StudentTable } from '../../features/student/ui/StudentTable';
+import StudentForm from '../../features/student/ui/StudentForm';
+import { useCreateStudent } from '../../features/student/model/useCreateStudent';
+import { useUpdateStudent } from '../../features/student/model/useUpdateStudent';
+import { useDeleteStudent } from '../../features/student/model/useDeleteStudent';
+import { Student, StudentRequestDTO } from '../../features/student/types';
 
 const ManageUsers: React.FC = () => {
   const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [tab, setTab] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,104 +54,24 @@ const ManageUsers: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+  const [selectedUser, setSelectedUser] = useState<UserResponseDTO | null>(null);
+  const [openForm, setOpenForm] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [openStudentForm, setOpenStudentForm] = useState(false);
+  const [isEditStudent, setIsEditStudent] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [deleteStudentDialogOpen, setDeleteStudentDialogOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
   // Hooks de React Query
-  const { users, isLoading: isLoadingUsers, error: errorUsers } = useUsers();
-  const { mutate: createUser, isLoading: isCreating } = useCreateUser();
-  const { mutate: updateUser, isLoading: isUpdating } = useUpdateUser();
-  const { mutate: deleteUser, isLoading: isDeleting } = useDeleteUser();
-  const { students, isLoading: isLoadingStudents, error: errorStudents } = useStudents(0, 1000); // Trae todos los estudiantes
-
-  // Columnas de la tabla (ajustar render para aceptar Record<string, unknown>)
-  const columns = [
-    {
-      id: 'nombre',
-      label: 'Nombre',
-      render: (_: unknown, row: UserRow) => `${row.nombre as string} ${row.apellido as string || ''}`,
-    },
-    {
-      id: 'email',
-      label: 'Email',
-      render: (value: unknown) => (value as string) || 'N/A',
-    },
-    {
-      id: 'rol',
-      label: 'Rol',
-      render: (value: unknown) => (
-        <Chip
-          label={
-            value === 'ROLE_ADMINISTRADOR' ? 'Administrador' :
-            value === 'ROLE_PROFESOR' ? 'Profesor' :
-            value === 'ROLE_TUTOR' ? 'Tutor' :
-            value === 'ROLE_ESTUDIANTE' ? 'Estudiante' : 'Desconocido'
-          }
-          color={
-            value === 'ROLE_ADMINISTRADOR' ? 'error' :
-            value === 'ROLE_PROFESOR' ? 'primary' :
-            value === 'ROLE_TUTOR' ? 'success' :
-            value === 'ROLE_ESTUDIANTE' ? 'info' : 'default'
-          }
-          size="small"
-        />
-      ),
-    },
-    {
-      id: 'activo',
-      label: 'Estado',
-      render: (value: unknown) => (
-        <Chip
-          label={(value as boolean) ? 'Activo' : 'Inactivo'}
-          color={(value as boolean) ? 'success' : 'default'}
-          size="small"
-        />
-      ),
-    },
-    {
-      id: 'acciones',
-      label: 'Acciones',
-      align: 'right' as const,
-      render: (_: unknown, row: UserRow) => (
-        <IconButton size="small" onClick={(e) => handleOpenMenu(e, row.id as number)}>
-          <MoreVertIcon />
-        </IconButton>
-      ),
-    },
-  ];
-
-  // Unifica los datos para la tabla según la pestaña seleccionada
-  let tableData: UserRow[] = [];
-  if (selectedTab === 'ROLE_ESTUDIANTE') {
-    tableData = (students as any[]).map((est: any) => ({
-      ...est,
-      rol: 'ROLE_ESTUDIANTE',
-      email: '', // Si no hay email en estudiante
-      activo: est.activo ?? true,
-    }));
-  } else if (selectedTab === 'all') {
-    const userRows = (users || []).map((u: any) => ({ ...u }));
-    const studentRows = (students as any[]).map((est: any) => ({
-      ...est,
-      rol: 'ROLE_ESTUDIANTE',
-      email: '',
-      activo: est.activo ?? true,
-    }));
-    tableData = [...userRows, ...studentRows];
-  } else {
-    tableData = (users || []).filter((u: any) => u.rol === selectedTab).map((u: any) => ({ ...u }));
-  }
-
-  // Filtrado por búsqueda
-  const filteredData = tableData.filter(user =>
-    ((user.nombre as string)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ((user.email as string) && (user.email as string).toLowerCase().includes(searchTerm.toLowerCase())))
-  );
-
-  const paginatedData = filteredData.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
+  const createStudent = useCreateStudent();
+  const updateStudent = useUpdateStudent();
+  const deleteStudent = useDeleteStudent();
 
   // Handlers
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -170,28 +94,68 @@ const ManageUsers: React.FC = () => {
   };
 
   const handleTabChange = (newValue: string) => {
-    setSelectedTab(newValue);
+    setTab(parseInt(newValue, 10));
     setPage(0);
   };
 
-  const handleEdit = () => {
-    const userToEdit = paginatedData.find((user) => user.id === selectedUserId);
-    if (userToEdit) {
-      setSelectedUser(userToEdit as unknown as User);
-      setDialogMode('edit');
-      setOpenDialog(true);
-    }
-    handleCloseMenu();
+  const handleEdit = (user: User) => {
+    setIsEdit(true);
+    setSelectedUser(user as UserResponseDTO);
+    setOpenForm(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = (user: User) => {
+    setUserToDelete(user);
     setDeleteConfirmOpen(true);
-    handleCloseMenu();
   };
 
-  const confirmDelete = async () => {
-    if (selectedUserId) {
-      deleteUser(selectedUserId, {
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleSaveUser = async (userData: UserRequestDTO) => {
+    if (isEdit && selectedUser) {
+      await updateUser.mutateAsync({ ...selectedUser, ...userData } as User, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Usuario actualizado correctamente',
+            severity: 'success',
+          });
+          setOpenForm(false);
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al actualizar usuario',
+            severity: 'error',
+          });
+        },
+      });
+    } else {
+      await createUser.mutateAsync(userData as User, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Usuario creado correctamente',
+            severity: 'success',
+          });
+          setOpenForm(false);
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al crear usuario',
+            severity: 'error',
+          });
+        },
+      });
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (userToDelete) {
+      await deleteUser.mutateAsync(userToDelete.id, {
         onSuccess: () => {
           setSnackbar({
             open: true,
@@ -208,65 +172,7 @@ const ManageUsers: React.FC = () => {
         },
         onSettled: () => {
           setDeleteConfirmOpen(false);
-          setSelectedUserId(null);
-        },
-      });
-    }
-  };
-
-  const handleAddUser = () => {
-    setSelectedUser(null);
-    setDialogMode('add');
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  // Adaptar handleSaveUser para aceptar UserRequestDTO y convertir a User
-  const handleSaveUser = async (userData: import('../../types/auth').UserRequestDTO) => {
-    // Convertir UserRequestDTO a User (puedes ajustar según tus reglas de negocio)
-    const user: User = {
-      ...userData,
-      id: userData.id ?? 0,
-      rol: selectedUser?.rol || 'ROLE_ESTUDIANTE', // O usa el rol seleccionado en el formulario
-      activo: true, // O ajusta según lógica
-    };
-    if (dialogMode === 'add') {
-      createUser(user, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Usuario creado correctamente',
-            severity: 'success',
-          });
-          setOpenDialog(false);
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al crear usuario',
-            severity: 'error',
-          });
-        },
-      });
-    } else if (dialogMode === 'edit') {
-      updateUser(user, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Usuario actualizado correctamente',
-            severity: 'success',
-          });
-          setOpenDialog(false);
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al actualizar usuario',
-            severity: 'error',
-          });
+          setUserToDelete(null);
         },
       });
     }
@@ -274,6 +180,94 @@ const ManageUsers: React.FC = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleAdd = () => {
+    setIsEdit(false);
+    setSelectedUser(null);
+    setOpenForm(true);
+  };
+
+  const handleAddStudent = () => {
+    setIsEditStudent(false);
+    setSelectedStudent(null);
+    setOpenStudentForm(true);
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setIsEditStudent(true);
+    setSelectedStudent(student);
+    setOpenStudentForm(true);
+  };
+
+  const handleDeleteStudent = (student: Student) => {
+    setStudentToDelete(student);
+    setDeleteStudentDialogOpen(true);
+  };
+
+  const handleSaveStudent = async (studentData: StudentRequestDTO) => {
+    if (isEditStudent && selectedStudent) {
+      await updateStudent.mutateAsync({ ...selectedStudent, ...studentData }, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Estudiante actualizado correctamente',
+            severity: 'success',
+          });
+          setOpenStudentForm(false);
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al actualizar estudiante',
+            severity: 'error',
+          });
+        },
+      });
+    } else {
+      await createStudent.mutateAsync(studentData, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Estudiante creado correctamente',
+            severity: 'success',
+          });
+          setOpenStudentForm(false);
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al crear estudiante',
+            severity: 'error',
+          });
+        },
+      });
+    }
+  };
+
+  const handleConfirmDeleteStudent = async () => {
+    if (studentToDelete) {
+      await deleteStudent.mutateAsync(studentToDelete.id, {
+        onSuccess: () => {
+          setSnackbar({
+            open: true,
+            message: 'Estudiante eliminado correctamente',
+            severity: 'success',
+          });
+        },
+        onError: () => {
+          setSnackbar({
+            open: true,
+            message: 'Error al eliminar estudiante',
+            severity: 'error',
+          });
+        },
+        onSettled: () => {
+          setDeleteStudentDialogOpen(false);
+          setStudentToDelete(null);
+        },
+      });
+    }
   };
 
   // Si no es administrador, no tiene acceso a esta página
@@ -309,7 +303,11 @@ const ManageUsers: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={handleAddUser}
+            onClick={() => {
+              setIsEdit(false);
+              setSelectedUser(null);
+              setOpenForm(true);
+            }}
           >
             Nuevo Usuario
           </Button>
@@ -317,101 +315,47 @@ const ManageUsers: React.FC = () => {
       </Paper>
 
       {/* Barra de Pestañas */}
-      <GenericTabs
-          tabs={[
-            { value: 'all', label: 'Todos' },
-            { value: 'ROLE_ESTUDIANTE', label: 'Alumnos' },
-            { value: 'ROLE_PROFESOR', label: 'Profesores' },
-            { value: 'ROLE_TUTOR', label: 'Tutores' },
-            { value: 'ROLE_ADMINISTRADOR', label: 'Administradores' }
-          ]}
-          selectedValue={selectedTab}
-          onChange={handleTabChange}
-          ariaLabel="filtrar usuarios por rol"
-          sx={{ mb: 3 }}
-      />
+      <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+        <Tab label="Usuarios" />
+        <Tab label="Estudiantes" />
+      </Tabs>
 
-      {(isLoadingUsers || isLoadingStudents) && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-          <CircularProgress />
-        </Box>
+      {/* Tablas y formularios FSD */}
+      {tab === 0 && (
+        <>
+          <UserTable onEdit={handleEdit} onDelete={handleDelete} onAdd={handleAdd} />
+          <UserForm open={openForm} onClose={() => { setOpenForm(false); setSelectedUser(null); }} onSave={handleSaveUser} isEdit={isEdit} user={selectedUser} />
+          <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+            <DialogTitle>Confirmar eliminación</DialogTitle>
+            <DialogContent>¿Estás seguro de que deseas eliminar este usuario?</DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDeleteConfirmOpen(false)} color="secondary">Cancelar</Button>
+              <Button onClick={handleConfirmDelete} color="error" variant="contained">Eliminar</Button>
+            </DialogActions>
+          </Dialog>
+        </>
       )}
-
-      {(errorUsers || errorStudents) && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {errorUsers?.message || errorStudents?.message}
-        </Alert>
+      {tab === 1 && (
+        <>
+          <StudentTable onEdit={handleEditStudent} onDelete={handleDeleteStudent} onAdd={handleAddStudent} />
+          <StudentForm open={openStudentForm} onClose={() => { setOpenStudentForm(false); setSelectedStudent(null); }} onSave={handleSaveStudent} isEdit={isEditStudent} student={selectedStudent} />
+          <Dialog open={deleteStudentDialogOpen} onClose={() => setDeleteStudentDialogOpen(false)}>
+            <DialogTitle>Confirmar eliminación</DialogTitle>
+            <DialogContent>¿Estás seguro de que deseas eliminar este estudiante?</DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDeleteStudentDialogOpen(false)} color="secondary">Cancelar</Button>
+              <Button onClick={handleConfirmDeleteStudent} color="error" variant="contained">Eliminar</Button>
+            </DialogActions>
+          </Dialog>
+        </>
       )}
-
-      {/* Mostrar la tabla solo cuando no está cargando */}
-      {!isLoadingUsers && !isLoadingStudents && (
-        <GenericTable
-          columns={columns}
-          data={paginatedData}
-          pagination={{
-            count: filteredData.length,
-            rowsPerPage,
-            page,
-            onPageChange: handleChangePage,
-            onRowsPerPageChange: handleChangeRowsPerPage,
-          }}
-          headerSx={{ 
-            backgroundColor: 'secondary.main', 
-            '& th': { color: 'white' } 
-          }}
-        />
-      )}
-
-      {/* Menú de acciones */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleCloseMenu}
-      >
-        <MenuItem onClick={handleEdit}>
-          <EditIcon fontSize="small" sx={{ mr: 1 }} />
-          Editar
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-          Eliminar
-        </MenuItem>
-      </Menu>
-
-      {/* Formulario para añadir/editar usuario */}
-      <UserForm 
-        open={openDialog} 
-        onClose={handleCloseDialog} 
-        onSave={handleSaveUser}
-        isEdit={dialogMode === 'edit'}
-        user={selectedUser ? { ...selectedUser, email: selectedUser.email || '' } : null}
-      />
-
-      {/* Diálogo de confirmación para eliminar */}
-      <Dialog
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-      >
-        <DialogTitle>Confirmar Eliminación</DialogTitle>
-        <DialogContent>
-          <Typography>
-            ¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancelar</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Eliminar
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Snackbar para mensajes */}
       <Snackbar 
         open={snackbar.open} 
         autoHideDuration={4000} 
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
