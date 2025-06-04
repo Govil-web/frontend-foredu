@@ -1,5 +1,5 @@
-import { apiClient } from './apiClient';
-import { User, AuthResponse } from '../../types/auth';
+import { apiClient } from '../../api/apiClient.ts';
+import { User, AuthResponse } from '../../types';
 import { tokenService } from '../auth/tokenService';
 
 const BASE_URL = '/auth';
