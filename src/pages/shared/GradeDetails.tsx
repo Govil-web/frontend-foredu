@@ -42,7 +42,8 @@ const GradeDetails: React.FC = () => {
                     setGradeDetails(response.data);
                     // Actualiza el encabezado con los detalles del grado
                     setHeaderGrade({
-                        gradoNombre: response.data.curso || response.data.aula
+                        gradoNombre: response.data.curso || 'No asignado',
+                        aula: response.data.aula || 'No asignada',
                     });
                 } else {
                     throw new Error(response.message || 'No se pudieron cargar los detalles del grado.');

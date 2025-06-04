@@ -34,6 +34,7 @@ import UserForm from '../../components/admin/UserForm';
 import { useAuth } from '../../hooks/useAuth';
 import GenericTabs from '../../components/common/GenericTabs.tsx';
 import { GenericTable } from '../../components/common/GenericTable';
+import { useStudents } from '../../hooks/useStudents';
 
 // Adaptar User a Record<string, unknown> para la tabla
 type UserRow = Record<string, unknown>;
@@ -53,27 +54,28 @@ const ManageUsers: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Hooks de React Query
-  const { users, isLoading, error, refetch } = useUsers();
+  const { users, isLoading: isLoadingUsers, error: errorUsers } = useUsers();
   const { mutate: createUser, isLoading: isCreating } = useCreateUser();
   const { mutate: updateUser, isLoading: isUpdating } = useUpdateUser();
   const { mutate: deleteUser, isLoading: isDeleting } = useDeleteUser();
+  const { students, isLoading: isLoadingStudents, error: errorStudents } = useStudents(0, 1000); // Trae todos los estudiantes
 
   // Columnas de la tabla (ajustar render para aceptar Record<string, unknown>)
   const columns = [
     {
       id: 'nombre',
       label: 'Nombre',
-      render: (_: unknown, row: UserRow) => `${row.nombre} ${row.apellido || ''}`,
+      render: (_: unknown, row: UserRow) => `${row.nombre as string} ${row.apellido as string || ''}`,
     },
     {
       id: 'email',
       label: 'Email',
-      render: (value: string) => value || 'N/A',
+      render: (value: unknown) => (value as string) || 'N/A',
     },
     {
       id: 'rol',
       label: 'Rol',
-      render: (value: string) => (
+      render: (value: unknown) => (
         <Chip
           label={
             value === 'ROLE_ADMINISTRADOR' ? 'Administrador' :
@@ -94,10 +96,10 @@ const ManageUsers: React.FC = () => {
     {
       id: 'activo',
       label: 'Estado',
-      render: (value: boolean) => (
+      render: (value: unknown) => (
         <Chip
-          label={value ? 'Activo' : 'Inactivo'}
-          color={value ? 'success' : 'default'}
+          label={(value as boolean) ? 'Activo' : 'Inactivo'}
+          color={(value as boolean) ? 'success' : 'default'}
           size="small"
         />
       ),
@@ -105,7 +107,7 @@ const ManageUsers: React.FC = () => {
     {
       id: 'acciones',
       label: 'Acciones',
-      align: 'right',
+      align: 'right' as const,
       render: (_: unknown, row: UserRow) => (
         <IconButton size="small" onClick={(e) => handleOpenMenu(e, row.id as number)}>
           <MoreVertIcon />
@@ -114,21 +116,35 @@ const ManageUsers: React.FC = () => {
     },
   ];
 
-  // Adaptar users a UserRow[] para la tabla
-  const filteredUsers = (users || [])
-    .filter((user) => {
-      if (selectedTab !== 'all' && selectedTab !== 'ROLE_ESTUDIANTE') {
-        return user.rol === selectedTab;
-      }
-      return true;
-    })
-    .filter((user) =>
-      user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-    .map((user) => ({ ...user } as UserRow));
+  // Unifica los datos para la tabla según la pestaña seleccionada
+  let tableData: UserRow[] = [];
+  if (selectedTab === 'ROLE_ESTUDIANTE') {
+    tableData = (students as any[]).map((est: any) => ({
+      ...est,
+      rol: 'ROLE_ESTUDIANTE',
+      email: '', // Si no hay email en estudiante
+      activo: est.activo ?? true,
+    }));
+  } else if (selectedTab === 'all') {
+    const userRows = (users || []).map((u: any) => ({ ...u }));
+    const studentRows = (students as any[]).map((est: any) => ({
+      ...est,
+      rol: 'ROLE_ESTUDIANTE',
+      email: '',
+      activo: est.activo ?? true,
+    }));
+    tableData = [...userRows, ...studentRows];
+  } else {
+    tableData = (users || []).filter((u: any) => u.rol === selectedTab).map((u: any) => ({ ...u }));
+  }
 
-  const paginatedUsers = filteredUsers.slice(
+  // Filtrado por búsqueda
+  const filteredData = tableData.filter(user =>
+    ((user.nombre as string)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ((user.email as string) && (user.email as string).toLowerCase().includes(searchTerm.toLowerCase())))
+  );
+
+  const paginatedData = filteredData.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -159,9 +175,9 @@ const ManageUsers: React.FC = () => {
   };
 
   const handleEdit = () => {
-    const userToEdit = paginatedUsers.find((user) => user.id === selectedUserId);
+    const userToEdit = paginatedData.find((user) => user.id === selectedUserId);
     if (userToEdit) {
-      setSelectedUser(userToEdit as User);
+      setSelectedUser(userToEdit as unknown as User);
       setDialogMode('edit');
       setOpenDialog(true);
     }
@@ -315,25 +331,25 @@ const ManageUsers: React.FC = () => {
           sx={{ mb: 3 }}
       />
 
-      {isLoading && (
+      {(isLoadingUsers || isLoadingStudents) && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
           <CircularProgress />
         </Box>
       )}
 
-      {error && (
+      {(errorUsers || errorStudents) && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          {error.message}
+          {errorUsers?.message || errorStudents?.message}
         </Alert>
       )}
 
       {/* Mostrar la tabla solo cuando no está cargando */}
-  {!isLoading && (
+      {!isLoadingUsers && !isLoadingStudents && (
         <GenericTable
           columns={columns}
-          data={paginatedUsers}
+          data={paginatedData}
           pagination={{
-            count: filteredUsers.length,
+            count: filteredData.length,
             rowsPerPage,
             page,
             onPageChange: handleChangePage,

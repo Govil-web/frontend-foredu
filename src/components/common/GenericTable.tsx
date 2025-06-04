@@ -11,6 +11,7 @@ import {
   Paper,
   SxProps,
   Theme,
+  TableFooter,
 } from '@mui/material';
 
 export interface Column {
@@ -90,7 +91,14 @@ const GenericTable: React.FC<GenericTableProps> = ({
           </TableHead>
 
           <TableBody>
-            {data.map((row, index) => (
+            {data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} align="center">
+                  No hay datos para mostrar
+                </TableCell>
+              </TableRow>
+            ) : (
+              data.map((row, index) => (
                 <TableRow
                     key={(row.id as string) || `row-${index}`}
                     sx={{
@@ -108,12 +116,12 @@ const GenericTable: React.FC<GenericTableProps> = ({
                       </TableCell>
                   ))}
                 </TableRow>
-            ))}
+              ))
+            )}
           </TableBody>
-        </Table>
-
-        {pagination && (
-            <TablePagination
+          {pagination && (
+            <TableFooter>
+              <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 count={pagination.count}
                 rowsPerPage={pagination.rowsPerPage}
@@ -124,8 +132,10 @@ const GenericTable: React.FC<GenericTableProps> = ({
                   borderTop: '1px solid',
                   borderColor: 'divider',
                 }}
-            />
-        )}
+              />
+            </TableFooter>
+          )}
+        </Table>
       </TableContainer>
   );
 };

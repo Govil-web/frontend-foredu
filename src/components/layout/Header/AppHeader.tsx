@@ -79,6 +79,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     const currentGradeName = headerGrade?.gradoNombre || 
                            gradeDetails?.gradoNombre || 
                            getGradeName(gradeDetails);
+
+    const currentGradeAula = headerGrade?.aula ||
+        gradeDetails?.aula ||
+                            'No asignada';
     
     const isGradeRoute = location.pathname.includes('/grados/');
 
@@ -159,6 +163,23 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                             }}
                         >
                             {currentGradeName}
+                        </Typography>
+                    )}
+                    {isGradeRoute && currentGradeAula && (
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: theme.palette.grey[500],
+                                fontWeight: 'medium',
+                                mt: 0.5,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                lineHeight: 1.2,
+                                fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                            }}
+                        >
+                            Aula: {currentGradeAula}
                         </Typography>
                     )}
                 </Box>

@@ -94,6 +94,8 @@ export const getGradeName = (gradeDetails?: { gradoNombre?: string }): string | 
     return null;
 };
 
+
+
 export const menuText = {
     profile: 'Perfil',
     logout: 'Cerrar sesión',

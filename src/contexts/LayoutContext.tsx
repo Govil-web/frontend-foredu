@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface HeaderGrade {
     gradoNombre?: string;
+    aula?: string;
 }
 
 interface LayoutContextType {
