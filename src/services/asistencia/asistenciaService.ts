@@ -1,5 +1,5 @@
 // src/services/asistencia/asistenciaService.ts
-import { apiClient } from '../api/axiosConfig'; // Asegúrate que la ruta sea correcta
+import { apiClient } from '../../api/apiClient.ts'; // Asegúrate que la ruta sea correcta
 import {
   ApiAsistenciaDTO,
   ApiAsistenciaRequest, // <-- Asegúrate de que este tipo exista en '../../types'

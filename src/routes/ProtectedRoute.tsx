@@ -1,5 +1,5 @@
 // src/routes/ProtectedRoute.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
 import { useAuthStore } from '../store/authStore';
@@ -10,26 +10,33 @@ interface ProtectedRouteProps {
   allowedRoles: UserRole[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+/**
+ * Componente que protege rutas basado en autenticación y roles
+ * Optimizado con React.memo para prevenir re-renders innecesarios
+ */
+const ProtectedRouteComponent: React.FC<ProtectedRouteProps> = ({ 
   children, 
   allowedRoles 
 }) => {
   const { user, loading, isAuthenticated, checkAuth } = useAuthStore();
   const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const checkRef = useRef(false);
 
   useEffect(() => {
-    const initialCheck = async () => {
-      await checkAuth();
-      setInitialCheckDone(true);
+    // Solo ejecutar una vez o cuando cambie isAuthenticated
+    const runAuthCheck = async () => {
+      if (!checkRef.current && !isAuthenticated) {
+        checkRef.current = true;
+        await checkAuth();
+        setInitialCheckDone(true);
+      } else if (!initialCheckDone) {
+        setInitialCheckDone(true);
+      }
     };
-    
-    if (!isAuthenticated && !initialCheckDone) {
-      initialCheck();
-    } else {
-      setInitialCheckDone(true);
-    }
-  }, [checkAuth, isAuthenticated, initialCheckDone]);
+
+    runAuthCheck();
+  }, [checkAuth, isAuthenticated]);
 
   // Mostrar loading mientras se verifica la autenticación
   if (loading || !initialCheckDone) {
@@ -59,4 +66,5 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   return <>{children}</>;
 };
 
+const ProtectedRoute = React.memo(ProtectedRouteComponent);
 export default ProtectedRoute;

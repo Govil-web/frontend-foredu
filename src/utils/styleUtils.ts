@@ -2,9 +2,7 @@ import { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { SxProps } from '@mui/system';
 
-// Utilidades de estilo reutilizables
 export const styleUtils = {
-  // Efecto de hover para tarjetas y elementos interactivos
   hoverEffect: (theme: Theme) => ({
     transition: 'transform 0.3s ease, box-shadow 0.3s ease',
     '&:hover': {

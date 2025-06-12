@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Box, Typography, useTheme, IconButton } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -6,27 +6,35 @@ import { Card } from '../common/Card.tsx';
 import { Course } from '../../types';
 import { useNavigate } from 'react-router-dom';
 
-const courseIcons: Record<string, { color: string; bgColor: string }> = {
-    PRIMERO: { color: '#F8D449', bgColor: '#FFF8E1' },
-    SEGUNDO: { color: '#4E97F3', bgColor: '#E3F2FD' },
-    TERCERO: { color: '#66BB6A', bgColor: '#E8F5E9' },
-    CUARTO: { color: '#7E57C2', bgColor: '#EDE7F6' },
-    QUINTO: { color: '#FF5722', bgColor: '#FBE9E7' },
-    SEXTO: { color: '#26A69A', bgColor: '#E0F2F1' },
-};
+// Los colores de los cursos ahora se obtienen del tema
 
-export const GradeCard: React.FC<{ course: Course; onClick: () => void }> = ({ course, onClick }) => {
+const GradeCardComponent: React.FC<{ course: Course; onClick: () => void }> = ({ course, onClick }) => {
     const theme = useTheme();
     const navigate = useNavigate();
 
-    const courseInfo = courseIcons[course.curso] || {
+    // Obtener los colores del tema o usar colores por defecto
+    const courseInfo = theme.palette.courseIcons?.[course.curso] || {
         color: theme.palette.primary.main,
         bgColor: `${theme.palette.primary.light}20`,
     };
 
-    const handleClick = () => {
+    const handleClick = useCallback(() => {
         navigate(`/grade/${course.id}`); // Cambia según tu ruta
         onClick();
+    }, [navigate, course.id, onClick]);
+    const mapTextToNumber = {
+        "primero": "1",
+        "segundo": "2",
+        "tercero": "3",
+        "cuarto": "4",
+        "quinto": "5",
+        "sexto": "6",
+        "septimo": "7",
+        "octavo": "8",
+        "noveno": "9",
+        "decimo": "10",
+        "undecimo": "11",
+        "duodecimo": "12"
     };
 
     return (
@@ -38,13 +46,18 @@ export const GradeCard: React.FC<{ course: Course; onClick: () => void }> = ({ c
                 '&:hover': {
                     boxShadow: 4,
                 },
-                borderRadius: 2,
+                borderRadius: '12px',
                 position: 'relative',
                 overflow: 'hidden',
+                border: '1.5px solid #C0C3C8',
             }}
         >
             {/* Botón de configuración */}
-            <IconButton size="small" sx={{ position: 'absolute', top: 8, right: 8 }}>
+            <IconButton 
+                size="small" 
+                aria-label="Configurar curso"
+                sx={{ position: 'absolute', top: 8, right: 8 }}
+            >
                 <SettingsIcon fontSize="small" />
             </IconButton>
 
@@ -67,7 +80,7 @@ export const GradeCard: React.FC<{ course: Course; onClick: () => void }> = ({ c
 
                 {/* Curso y aula */}
                 <Typography variant="h6" fontWeight="bold">
-                    {`${course.curso[0]}° ${course.aula}`}
+                    {`${mapTextToNumber[course.curso.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")] || course.curso}° ${course.aula}`}
                 </Typography>
 
                 {/* Nombre del profesor principal */}
@@ -98,3 +111,5 @@ export const GradeCard: React.FC<{ course: Course; onClick: () => void }> = ({ c
         </Card>
     );
 };
+
+export const GradeCard = React.memo(GradeCardComponent);

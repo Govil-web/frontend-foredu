@@ -1,5 +1,5 @@
 // src/services/courses/courseService.ts
-import { apiClient } from "../api/axiosConfig";
+import { apiClient } from "../../api/apiClient.ts";
 import { Course, ApiResponse } from "../../types";
 
 export const courseService = {

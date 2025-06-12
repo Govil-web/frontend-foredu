@@ -24,9 +24,9 @@ export type TipoEstadoAsistencia =
   | 'PRESENTE'
   | 'AUSENTE'
   | 'TARDE'
-  | 'JUSTIFICADO_AUSENTE' // Si manejas ausencias justificadas como un estado separado
-  | 'JUSTIFICADO_TARDE'   // Si manejas tardes justificadas
-  | 'NO_REGISTRADA';      // Estado para el frontend si no hay registro
+  | 'JUSTIFICADO' 
+  |'NO_REGISTRADA';// Estado para el frontend si no hay registro
+    
 
 
 /**
@@ -80,4 +80,20 @@ export interface ApiAsistenciaDiariaDTO {
   asistencias: ApiAsistenciaDTO[]; // Lista de asistencias para esa fecha
   porcentajeAsistencia?: number; // Podría ser el % general del grado hasta esa fecha
   nombreGrado?: string; // Nombre del grado asociado a este registro
+}
+export interface AsistenciaResponse {
+  id: number;
+  fecha: string;
+  justificativos: string;
+  porcentajeAsistencia: number;
+  nombreEstudiante: string;
+  estado: string;
+  estudiante: number;
+  grado: number;
+}
+
+export interface ApiAsistenciaResponse {
+  estado: boolean;
+  message: string;
+  data: AsistenciaResponse[];
 }

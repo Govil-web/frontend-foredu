@@ -1,8 +1,6 @@
-// src/services/api/axiosConfig.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { tokenService } from '../auth/tokenService';
+import { tokenService } from '../services/auth/tokenService';
 
-// Tipos para respuestas API
 export interface ApiResponse<T = any> {
   estado: boolean;
   message?: string;
@@ -10,27 +8,21 @@ export interface ApiResponse<T = any> {
   dataIterable?: T[];
 }
 
-// Clase base para configurar y gestionar instancias de Axios
 class ApiClient {
   private instance: AxiosInstance;
-  private baseURL: string;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL;
-    
     this.instance = axios.create({
-      baseURL: this.baseURL,
+      baseURL: import.meta.env.VITE_API_URL,
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 15000, // 15 segundos timeout
+      timeout: 15000,
     });
-
     this.setupInterceptors();
   }
 
   private setupInterceptors(): void {
-    // Interceptor de solicitud para añadir token
     this.instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
         const token = tokenService.getToken();
@@ -44,16 +36,11 @@ class ApiClient {
         return Promise.reject(error);
       }
     );
-
-    // Interceptor de respuesta para manejar errores
     this.instance.interceptors.response.use(
       (response: AxiosResponse): AxiosResponse => response,
       (error: AxiosError): Promise<AxiosError> => {
         if (error.response?.status === 401) {
-          console.warn('Error 401: Token inválido o expirado');
           tokenService.removeToken();
-          
-          // Redirigir a login si no estamos ya en esa página
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
@@ -63,7 +50,6 @@ class ApiClient {
     );
   }
 
-  // Métodos para operaciones CRUD
   public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     try {
       const response = await this.instance.get<T>(url, config);
@@ -117,7 +103,6 @@ class ApiClient {
   private handleError(error: AxiosError): void {
     const errorResponse = error.response?.data as { message?: string } | undefined;
     const errorMessage = errorResponse?.message || 'Error en la solicitud';
-    
     console.error('Error API:', {
       url: error.config?.url,
       status: error.response?.status,
@@ -126,5 +111,5 @@ class ApiClient {
   }
 }
 
-// Exportamos una única instancia que se usará en toda la aplicación
 export const apiClient = new ApiClient();
+export type { ApiClient }; 
