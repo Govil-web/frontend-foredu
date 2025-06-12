@@ -10,6 +10,7 @@ export interface Student {
   avatarUrl?: string;
   nombreCompleto?: string;
   rol?: string;
+  email?: string;
 }
 
 export interface StudentRequestDTO {

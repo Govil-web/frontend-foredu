@@ -1,14 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
-import { userApi } from '../api/userApi';
-import { userMapper } from '../api/userMapper';
 import { User } from '../types';
+import { userApi } from '../api/userApi';
 
-export function useUsers() {
-  return useQuery<User[], Error>({
+export const useUsers = () => {
+  return useQuery<User[]>({
     queryKey: ['users'],
     queryFn: async () => {
-      const res = await userApi.getAll();
-      return (res.dataIterable || []).map(userMapper.fromApi);
+      try {
+        const response = await userApi.getAll();
+        if (response?.dataIterable) {
+          return response.dataIterable;
+        }
+        return [];
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        return [];
+      }
     },
   });
-} 
+}; 

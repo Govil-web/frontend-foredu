@@ -22,6 +22,20 @@ const GradeCardComponent: React.FC<{ course: Course; onClick: () => void }> = ({
         navigate(`/grade/${course.id}`); // Cambia según tu ruta
         onClick();
     }, [navigate, course.id, onClick]);
+    const mapTextToNumber = {
+        "primero": "1",
+        "segundo": "2",
+        "tercero": "3",
+        "cuarto": "4",
+        "quinto": "5",
+        "sexto": "6",
+        "septimo": "7",
+        "octavo": "8",
+        "noveno": "9",
+        "decimo": "10",
+        "undecimo": "11",
+        "duodecimo": "12"
+    };
 
     return (
         <Card
@@ -32,9 +46,10 @@ const GradeCardComponent: React.FC<{ course: Course; onClick: () => void }> = ({
                 '&:hover': {
                     boxShadow: 4,
                 },
-                borderRadius: 2,
+                borderRadius: '12px',
                 position: 'relative',
                 overflow: 'hidden',
+                border: '1.5px solid #C0C3C8',
             }}
         >
             {/* Botón de configuración */}
@@ -65,7 +80,7 @@ const GradeCardComponent: React.FC<{ course: Course; onClick: () => void }> = ({
 
                 {/* Curso y aula */}
                 <Typography variant="h6" fontWeight="bold">
-                    {`${course.curso[0]}° ${course.aula}`}
+                    {`${mapTextToNumber[course.curso.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")] || course.curso}° ${course.aula}`}
                 </Typography>
 
                 {/* Nombre del profesor principal */}

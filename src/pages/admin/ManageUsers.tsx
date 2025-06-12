@@ -2,78 +2,42 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Paper,
-  Button,
-  TextField,
-  IconButton,
-  InputAdornment,
-  Chip,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
   Alert,
   Snackbar,
-  Tabs,
-  Tab,
+  CardContent,
+  Card,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-} from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import GenericTabs from '../../components/common/GenericTabs.tsx';
-import { GenericTable } from '../../components/common/GenericTable';
 import { UserTable } from '../../features/user/ui/UserTable';
-import UserForm from '../../features/user/ui/UserForm';
-import { useCreateUser } from '../../features/user/model/useCreateUser';
-import { useUpdateUser } from '../../features/user/model/useUpdateUser';
-import { useDeleteUser } from '../../features/user/model/useDeleteUser';
-import { User, UserRequestDTO, UserResponseDTO } from '../../features/user/types';
-import { StudentTable } from '../../features/student/ui/StudentTable';
-import StudentForm from '../../features/student/ui/StudentForm';
-import { useCreateStudent } from '../../features/student/model/useCreateStudent';
-import { useUpdateStudent } from '../../features/student/model/useUpdateStudent';
-import { useDeleteStudent } from '../../features/student/model/useDeleteStudent';
-import { Student, StudentRequestDTO } from '../../features/student/types';
+import { useUsers } from "../../features/user/model/useUsers.ts";
+import { useStudents } from "../../features/student/model/useStudents.ts";
+import { GenericTabs } from "../../components/common";
+import { User } from '../../features/user/types';
 
 const ManageUsers: React.FC = () => {
+  const { data: userList = [] } = useUsers();
+  const { data: studentList = [] } = useStudents();
   const { user } = useAuth();
-  const [tab, setTab] = useState(0);
+
+  // Estado para el tab de roles
+  const [selectedRole, setSelectedRole] = useState('all');
+
+  // Estados para paginación
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
-  const [selectedUser, setSelectedUser] = useState<UserResponseDTO | null>(null);
-  const [openForm, setOpenForm] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [openStudentForm, setOpenStudentForm] = useState(false);
-  const [isEditStudent, setIsEditStudent] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [deleteStudentDialogOpen, setDeleteStudentDialogOpen] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
-  // Hooks de React Query
-  const createUser = useCreateUser();
-  const updateUser = useUpdateUser();
-  const deleteUser = useDeleteUser();
-  const createStudent = useCreateStudent();
-  const updateStudent = useUpdateStudent();
-  const deleteStudent = useDeleteStudent();
+  // Estado para snackbar
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error'
+  }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
-  // Handlers
+  // Handlers para paginación
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -83,285 +47,143 @@ const ManageUsers: React.FC = () => {
     setPage(0);
   };
 
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, userId: number) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedUserId(userId);
-  };
-
-  const handleCloseMenu = () => {
-    setAnchorEl(null);
-    setSelectedUserId(null);
-  };
-
-  const handleTabChange = (newValue: string) => {
-    setTab(parseInt(newValue, 10));
-    setPage(0);
-  };
-
-  const handleEdit = (user: User) => {
-    setIsEdit(true);
-    setSelectedUser(user as UserResponseDTO);
-    setOpenForm(true);
-  };
-
-  const handleDelete = (user: User) => {
-    setUserToDelete(user);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  const handleSaveUser = async (userData: UserRequestDTO) => {
-    if (isEdit && selectedUser) {
-      await updateUser.mutateAsync({ ...selectedUser, ...userData } as User, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Usuario actualizado correctamente',
-            severity: 'success',
-          });
-          setOpenForm(false);
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al actualizar usuario',
-            severity: 'error',
-          });
-        },
-      });
-    } else {
-      await createUser.mutateAsync(userData as User, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Usuario creado correctamente',
-            severity: 'success',
-          });
-          setOpenForm(false);
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al crear usuario',
-            severity: 'error',
-          });
-        },
-      });
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (userToDelete) {
-      await deleteUser.mutateAsync(userToDelete.id, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Usuario eliminado correctamente',
-            severity: 'success',
-          });
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al eliminar usuario',
-            severity: 'error',
-          });
-        },
-        onSettled: () => {
-          setDeleteConfirmOpen(false);
-          setUserToDelete(null);
-        },
-      });
-    }
-  };
-
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleAdd = () => {
-    setIsEdit(false);
-    setSelectedUser(null);
-    setOpenForm(true);
+  // Handlers para CRUD de usuarios
+  const handleEditUser = (user: User) => {
+    // Implementar lógica de edición
+    console.log('Editar usuario:', user);
   };
 
-  const handleAddStudent = () => {
-    setIsEditStudent(false);
-    setSelectedStudent(null);
-    setOpenStudentForm(true);
+  const handleDeleteUser = (user: User) => {
+    // Implementar lógica de eliminación
+    console.log('Eliminar usuario:', user);
   };
 
-  const handleEditStudent = (student: Student) => {
-    setIsEditStudent(true);
-    setSelectedStudent(student);
-    setOpenStudentForm(true);
+  const handleAddUser = () => {
+    // Implementar lógica para agregar usuario
+    console.log('Agregar nuevo usuario');
   };
 
-  const handleDeleteStudent = (student: Student) => {
-    setStudentToDelete(student);
-    setDeleteStudentDialogOpen(true);
-  };
+  // Filtrar usuarios por roles
+  const profesores = userList.filter(u => u.rol === 'ROLE_PROFESOR');
+  const tutores = userList.filter(u => u.rol === 'ROLE_TUTOR');
 
-  const handleSaveStudent = async (studentData: StudentRequestDTO) => {
-    if (isEditStudent && selectedStudent) {
-      await updateStudent.mutateAsync({ ...selectedStudent, ...studentData }, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Estudiante actualizado correctamente',
-            severity: 'success',
-          });
-          setOpenStudentForm(false);
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al actualizar estudiante',
-            severity: 'error',
-          });
-        },
-      });
-    } else {
-      await createStudent.mutateAsync(studentData, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Estudiante creado correctamente',
-            severity: 'success',
-          });
-          setOpenStudentForm(false);
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al crear estudiante',
-            severity: 'error',
-          });
-        },
-      });
-    }
-  };
-
-  const handleConfirmDeleteStudent = async () => {
-    if (studentToDelete) {
-      await deleteStudent.mutateAsync(studentToDelete.id, {
-        onSuccess: () => {
-          setSnackbar({
-            open: true,
-            message: 'Estudiante eliminado correctamente',
-            severity: 'success',
-          });
-        },
-        onError: () => {
-          setSnackbar({
-            open: true,
-            message: 'Error al eliminar estudiante',
-            severity: 'error',
-          });
-        },
-        onSettled: () => {
-          setDeleteStudentDialogOpen(false);
-          setStudentToDelete(null);
-        },
-      });
-    }
-  };
+  // Configuración de las tabs de roles
+  const roleTabs = [
+    { value: 'all', label: 'Todos' },
+    { value: 'ROLE_ADMINISTRADOR', label: 'Admin' },
+    { value: 'ROLE_PROFESOR', label: 'Profesor' },
+    { value: 'ROLE_ESTUDIANTE', label: 'Estudiante' },
+    { value: 'ROLE_TUTOR', label: 'Tutor' },
+  ];
 
   // Si no es administrador, no tiene acceso a esta página
   if (user?.role !== 'ROLE_ADMINISTRADOR') {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          No tienes permisos para acceder a esta página
-        </Alert>
-      </Box>
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error">
+            No tienes permisos para acceder a esta página
+          </Alert>
+        </Box>
     );
   }
 
   return (
-    <Box>
-      <Paper sx={{ mb: 3, p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <TextField
-            placeholder="Buscar usuarios por nombre o email"
-            variant="outlined"
-            size="small"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ width: '70%' }}
-          />
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setIsEdit(false);
-              setSelectedUser(null);
-              setOpenForm(true);
-            }}
-          >
-            Nuevo Usuario
-          </Button>
+      <Box>
+        {/* Cards de estadísticas */}
+        <Box display="flex" gap={3} mb={3}>
+          <Card sx={{
+            background: '#68CB6A',
+            color: '#383838',
+            width: '265px',
+            height: '112px',
+            flexShrink: 0
+          }}>
+            <CardContent>
+              <Typography variant="body2" color="rgba(255,255,255,0.8)">
+                Cantidad de alumnos
+              </Typography>
+              <Typography variant="h4" mt={2}>
+                {studentList.length}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card sx={{
+            background: '#FFC340',
+            color: '#fff',
+            width: '265px',
+            height: '112px',
+            flexShrink: 0
+          }}>
+            <CardContent>
+              <Typography variant="body2" color="rgba(255,255,255,0.8)">
+                Profesores vinculados
+              </Typography>
+              <Typography variant="h4" mt={2}>
+                {profesores.length}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card sx={{
+            background: '#6FAAF1',
+            color: '#fff',
+            width: '265px',
+            height: '112px',
+            flexShrink: 0
+          }}>
+            <CardContent>
+              <Typography variant="body2" color="rgba(255,255,255,0.8)">
+                Padres registrados
+              </Typography>
+              <Typography variant="h4" mt={2}>
+                {tutores.length}
+              </Typography>
+            </CardContent>
+          </Card>
         </Box>
-      </Paper>
 
-      {/* Barra de Pestañas */}
-      <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-        <Tab label="Usuarios" />
-        <Tab label="Estudiantes" />
-      </Tabs>
+        {/* Tabs de filtro por roles - MOVIDO AQUÍ DESDE UserTable */}
+        <Box mb={2}>
+          <GenericTabs
+              tabs={roleTabs}
+              selectedValue={selectedRole}
+              onChange={setSelectedRole}
+              ariaLabel="filtro de roles"
+          />
+        </Box>
 
-      {/* Tablas y formularios FSD */}
-      {tab === 0 && (
-        <>
-          <UserTable onEdit={handleEdit} onDelete={handleDelete} onAdd={handleAdd} />
-          <UserForm open={openForm} onClose={() => { setOpenForm(false); setSelectedUser(null); }} onSave={handleSaveUser} isEdit={isEdit} user={selectedUser} />
-          <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
-            <DialogTitle>Confirmar eliminación</DialogTitle>
-            <DialogContent>¿Estás seguro de que deseas eliminar este usuario?</DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDeleteConfirmOpen(false)} color="secondary">Cancelar</Button>
-              <Button onClick={handleConfirmDelete} color="error" variant="contained">Eliminar</Button>
-            </DialogActions>
-          </Dialog>
-        </>
-      )}
-      {tab === 1 && (
-        <>
-          <StudentTable onEdit={handleEditStudent} onDelete={handleDeleteStudent} onAdd={handleAddStudent} />
-          <StudentForm open={openStudentForm} onClose={() => { setOpenStudentForm(false); setSelectedStudent(null); }} onSave={handleSaveStudent} isEdit={isEditStudent} student={selectedStudent} />
-          <Dialog open={deleteStudentDialogOpen} onClose={() => setDeleteStudentDialogOpen(false)}>
-            <DialogTitle>Confirmar eliminación</DialogTitle>
-            <DialogContent>¿Estás seguro de que deseas eliminar este estudiante?</DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDeleteStudentDialogOpen(false)} color="secondary">Cancelar</Button>
-              <Button onClick={handleConfirmDeleteStudent} color="error" variant="contained">Eliminar</Button>
-            </DialogActions>
-          </Dialog>
-        </>
-      )}
+        {/* Tabla de usuarios - SIN TABS INTERNAS */}
+        <UserTable
+            selectedRole={selectedRole}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            onEdit={handleEditUser}
+            onDelete={handleDeleteUser}
+            onAdd={handleAddUser}
+        />
 
-      {/* Snackbar para mensajes */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+        {/* Snackbar para notificaciones */}
+        <Snackbar
+            open={snackbar.open}
+            autoHideDuration={6000}
+            onClose={handleCloseSnackbar}
+        >
+          <Alert
+              onClose={handleCloseSnackbar}
+              severity={snackbar.severity}
+              sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
   );
 };
 

@@ -1,4 +1,3 @@
-// pages/admin/GradeDetails.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -22,7 +21,6 @@ const GradeDetails: React.FC = () => {
     const [loadingGrade, setLoadingGrade] = useState(true);
     const [errorGrade, setErrorGrade] = useState<string | null>(null);
     
-    // Usa el contexto de layout para actualizar el encabezado
     const { setHeaderGrade } = useLayout();
 
     const numericGradeId = id ? Number(id) : null;
@@ -40,7 +38,6 @@ const GradeDetails: React.FC = () => {
                 const response = await courseService.getById(numericGradeId);
                 if (response.estado && response.data) {
                     setGradeDetails(response.data);
-                    // Actualiza el encabezado con los detalles del grado
                     setHeaderGrade({
                         gradoNombre: response.data.curso || 'No asignado',
                         aula: response.data.aula || 'No asignada',
@@ -58,7 +55,6 @@ const GradeDetails: React.FC = () => {
 
         fetchGradeDetails();
         
-        // Limpiar al desmontar
         return () => {
             setHeaderGrade(null);
         };
@@ -90,19 +86,6 @@ const GradeDetails: React.FC = () => {
                 mb: 3, 
                 overflow: 'hidden',
             }}>
-                <Box sx={{ 
-                    position: 'relative', 
-                    borderBottom: '1px solid', 
-                    borderColor: 'grey.400',
-                    mb: 1,
-                }}>
-                    <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        position: 'relative',
-                        zIndex: 2,
-                    }}>
                         <GenericTabs
                             tabs={orderedTabs}
                             selectedValue={selectedTab}
@@ -113,24 +96,22 @@ const GradeDetails: React.FC = () => {
                                     zIndex: 3,
                                 }
                             }}
+                            rightContent={
+                                <Typography
+                                    sx={{
+                                        fontWeight: 'medium',
+                                        fontFamily: 'Noto Sans TC',
+                                        fontSize:'15px',
+                                        color: '#383838',
+                                    }}
+                                >
+                                    Profesor: {gradeDetails?.profesorNombre || 'No asignado'}
+                                </Typography>
+                            }
                         />
                         
-                        <Typography 
-                            variant="body1" 
-                            sx={{ 
-                                fontWeight: 'medium',
-                                ml: 2,
-                                backgroundColor: 'transparent',
-                                position: 'relative',
-                                zIndex: 2,
-                                fontSize:'15px',
-                                color: '#383838',
-                            }}
-                        >
-                            Profesor: {gradeDetails?.profesorNombre || 'No asignado'} 
-                        </Typography>
-                    </Box>
-                </Box>
+
+
             </Box>
             
             {selectedTab === 'asistencia' && numericGradeId && (

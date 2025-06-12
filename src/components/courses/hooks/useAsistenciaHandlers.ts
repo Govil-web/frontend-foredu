@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { parseISO } from 'date-fns';
 import { estudianteService } from '../../../services/api/estudianteService';
 import { asistenciaService } from '../../../services/asistencia/asistenciaService';
 import { Estudiante, ApiAsistenciaDTO, ApiAsistenciaRequest, BackendApiResponse } from '../../../types';
@@ -32,7 +31,7 @@ export const useAsistenciaHandlers = ({
 
   const handleFetchStudents = useCallback(async () => {
     if (!gradeId) return;
-    
+
     console.log("Fetching students for grade:", gradeId);
     setLoading(true);
     setError(null);
@@ -62,20 +61,17 @@ export const useAsistenciaHandlers = ({
       setError("Por favor, seleccione una fecha de inicio y fin.");
       return;
     }
-    
-    if (parseISO(rangeEndDate) < parseISO(rangeStartDate)) {
-      setError("La fecha de fin no puede ser anterior a la fecha de inicio.");
-      return;
-    }
+
 
     setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-    setRangeViewData([]);
-    
-    console.log(`Fetching attendance data for grade ${gradeId}, ${rangeStartDate} to ${rangeEndDate}`);
-    
+    setError("");
+
     try {
+      const startDateFormatted = rangeStartDate.split('T')[0];
+      const endDateFormatted = rangeEndDate.split('T')[0];
+
+      console.log("Consultando asistencias desde", startDateFormatted, "hasta", endDateFormatted);
+
       const asistenciasApiRes: BackendApiResponse<ApiAsistenciaDTO> = 
         await asistenciaService.getAsistenciasByDateAndGrado(gradeId, rangeStartDate, rangeEndDate);
       

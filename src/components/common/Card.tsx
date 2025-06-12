@@ -1,4 +1,3 @@
-// src/components/common/Card.tsx (Componente reutilizable)
 import React from 'react';
 import { Card as MuiCard, CardProps, useTheme } from '@mui/material';
 import { SxProps, Theme } from '@mui/material/styles';

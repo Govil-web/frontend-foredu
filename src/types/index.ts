@@ -40,16 +40,20 @@ export interface CourseListApiResponse {
     dataIterable?: ApiCourseData[]; // <-- CORREGIDO: de boolean a ApiCourseData[] | undefined
     message?: string; // Opcional: si tu API también devuelve un mensaje
 }
-export interface ApiEstudianteData { // Asegúrate que esta interfaz esté completa
+export interface ApiEstudianteData {
     id: number;
     nombre: string;
     apellido: string;
     dni: string;
+    email?: string;
     activo: boolean;
     genero: string;
     gradoId: number;
     gradoNombre: string;
 }
+
+export type Student = ApiEstudianteData;
+
 export interface ApiEstudiantePorGradoResponse {
   estado: boolean;                        // Indica el estado de la operación desde la API
   message: string;                        // Mensaje descriptivo de la API
